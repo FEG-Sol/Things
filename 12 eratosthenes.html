@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sieb des Eratosthenes (bis 1000)</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 1rem;
+    background: #f7f7f7;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  .controls {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    background: #1976d2;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #1565c0;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.3rem;
+    max-width: 800px;
+    margin: auto;
+  }
+  .cell {
+    padding: 0.8rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+    font-size: 0.9rem;
+  }
+  .cell.prime {
+    background: #b3e5fc;
+    border-color: #81d4fa;
+  }
+  .cell.removed {
+    background: #eee;
+    color: #999;
+    text-decoration: line-through;
+  }
+  .cell.locked {
+    cursor: default;
+    background: #fafafa;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<h1>Sieb des Eratosthenes (bis 1000)</h1>
+<div class="controls">
+  <button id="showResult">Ergebnis zeigen</button>
+</div>
+<div id="grid"></div>
+
+<script>
+const MAX = 1000;
+const grid = document.getElementById("grid");
+const delayBetweenMarks = 30;
+const showResultBtn = document.getElementById("showResult");
+
+let cells = [];
+let resultShown = false;
+
+// Zahlen erzeugen
+for (let i = 1; i <= MAX; i++) {
+  let div = document.createElement("div");
+  div.textContent = i;
+  div.classList.add("cell");
+  if (i === 1) {
+    div.classList.add("locked");
+  }
+  grid.appendChild(div);
+  cells[i] = div;
+}
+
+// Klick auf Zahlen (nur Sieben, keine Prim-Markierung)
+grid.addEventListener("click", async (e) => {
+  const clickedNum = parseInt(e.target.textContent);
+  if (
+    !resultShown &&
+    !isNaN(clickedNum) &&
+    clickedNum > 1 &&
+    !e.target.classList.contains("removed")
+  ) {
+    await sieveMultiples(clickedNum);
+  }
+});
+
+// Button: Ergebnis zeigen
+showResultBtn.addEventListener("click", () => {
+  resultShown = true;
+  markPrimesUpTo(MAX);
+});
+
+async function sieveMultiples(n) {
+  for (let j = 2 * n; j <= MAX; j += n) {
+    await new Promise(r => setTimeout(r, delayBetweenMarks));
+    cells[j].classList.add("removed");
+  }
+}
+
+function markPrimesUpTo(limit) {
+  let sieve = Array(limit + 1).fill(true);
+  sieve[0] = sieve[1] = false;
+
+  for (let p = 2; p * p <= limit; p++) {
+    if (sieve[p]) {
+      for (let k = p * p; k <= limit; k += p) {
+        sieve[k] = false;
+      }
+    }
+  }
+
+  for (let i = 2; i <= limit; i++) {
+    if (sieve[i] && !cells[i].classList.contains("removed")) {
+      cells[i].classList.add("prime");
+    }
+  }
+}
+</script>
+
+</body>
+</html>
