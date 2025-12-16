@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Bild aufdecken</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #ffffff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ===== Seitenlayout ===== */
+#page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ===== Bildbereich ===== */
+#imageArea {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/*
+Wrapper definiert den maximalen Raum:
+- volle Breite
+- volle Höhe des verfügbaren Bereichs
+*/
+#imageWrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/*
+Das Bild:
+- passt sich entweder an Breite ODER Höhe an
+- niemals größer als der verfügbare Raum
+- keine Verzerrung, kein Abschneiden
+*/
+#image {
+    display: none;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+/* ===== Overlay exakt über dem Bild ===== */
+#overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    pointer-events: none;
+}
+
+.cell {
+    background: #9e9e9e;
+    border: 1px solid #bdbdbd;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 0.25s ease;
+}
+
+.cell.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ===== Steuerung ===== */
+#controls {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-top: 1px solid #e0e0e0;
+    background: #f7f7f7;
+    align-items: center;
+    justify-content: center;
+}
+
+#controls > * {
+    height: 42px;
+}
+
+input[type="file"] {
+    max-width: 200px;
+}
+
+select, button {
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #ffffff;
+    font-size: 14px;
+}
+
+button {
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+button:hover {
+    background: #eeeeee;
+}
+
+button:active {
+    transform: scale(0.96);
+}
+</style>
+</head>
+
+<body>
+<div id="page">
+
+    <div id="imageArea">
+        <div id="imageWrapper">
+            <img id="image">
+            <div id="overlay"></div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <input type="file" id="fileInput" accept="image/*">
+
+        <select id="gridSize">
+            <option value="3">9 Felder</option>
+            <option value="4">16 Felder</option>
+            <option value="5">25 Felder</option>
+        </select>
+
+        <button id="nextBtn">Weiter</button>
+        <button id="undoBtn">Zurück</button>
+        <button id="showAllBtn">Ergebnis</button>
+    </div>
+
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const image = document.getElementById('image');
+const overlay = document.getElementById('overlay');
+const gridSizeSelect = document.getElementById('gridSize');
+const nextBtn = document.getElementById('nextBtn');
+const undoBtn = document.getElementById('undoBtn');
+const showAllBtn = document.getElementById('showAllBtn');
+
+let cells = [];
+let history = [];
+
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        image.src = e.target.result;
+        image.style.display = 'block';
+        image.onload = createGrid;
+    };
+    reader.readAsDataURL(file);
+});
+
+gridSizeSelect.addEventListener('change', createGrid);
+
+function createGrid() {
+    overlay.innerHTML = '';
+    cells = [];
+    history = [];
+
+    const n = parseInt(gridSizeSelect.value);
+    overlay.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    overlay.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+
+    for (let i = 0; i < n * n; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.addEventListener('click', () => hideCell(cell));
+        overlay.appendChild(cell);
+        cells.push(cell);
+    }
+}
+
+function hideCell(cell) {
+    if (cell.classList.contains('hidden')) return;
+    cell.classList.add('hidden');
+    history.push(cell);
+}
+
+nextBtn.addEventListener('click', () => {
+    const visible = cells.filter(c => !c.classList.contains('hidden'));
+    if (!visible.length) return;
+    hideCell(visible[Math.floor(Math.random() * visible.length)]);
+});
+
+undoBtn.addEventListener('click', () => {
+    const last = history.pop();
+    if (last) last.classList.remove('hidden');
+});
+
+showAllBtn.addEventListener('click', () => {
+    cells.forEach(c => {
+        if (!c.classList.contains('hidden')) {
+            history.push(c);
+            c.classList.add('hidden');
+        }
+    });
+});
+</script>
+
+</body>
+</html>
