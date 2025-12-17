@@ -302,10 +302,9 @@ print("Game over.")
 </pre>
 
     <div class="hint">
-      <strong>Warum global?</strong><br>
-      Die Funktion <code>raum_rechts()</code> soll die Anzahl der Leben
-      dauerhaft verändern. Ohne <code>global</code> würde Python eine
-      neue lokale Variable erzeugen.
+      <strong>Spielende</strong><br>
+      Das Spiel wird wiederholt, solange die Variable <code>leben</code> größer als Null ist. 
+      Der Befehl <code>print("Game over.")</code> wird erst danach angezeigt, weil er nicht eingerückt ist und deshalb nicht Teil der Wiederholung ist.
     </div>
   </div>
 
