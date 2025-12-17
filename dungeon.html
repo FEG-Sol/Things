@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini-Dungeon – Schrittweise Anleitung</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    pre {
+      background: #272822;
+      color: #f8f8f2;
+      padding: 20px;
+      border-radius: 6px;
+      overflow-x: auto;
+      line-height: 110%;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+    }
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+    .step {
+      display: none;
+    }
+    .step.active {
+      display: block;
+    }
+    .hint {
+      background: #ecf0f1;
+      padding: 15px;
+      border-left: 5px solid #3498db;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Schritt 1 -->
+  <div class="step active">
+    <h1>Mini-Dungeon – Schritt 1</h1>
+    <h2>Spielstart, Räume und if / elif / else</h2>
+    <p>
+      In diesem ersten Schritt entsteht das Grundgerüst des Spiels.
+      Der Spieler kann zwischen zwei Räumen wählen. Das Spiel läuft in einer
+      <code>while</code>-Schleife, bis der Spieler beendet.
+    </p>
+    <p>
+      Die Auswahl der Räume erfolgt mit <code>if</code>, <code>elif</code> und <code>else</code>:
+    </p>
+    <ul>
+      <li><strong>if</strong>: prüft die erste Bedingung</li>
+      <li><strong>elif</strong>: prüft weitere Möglichkeiten</li>
+      <li><strong>else</strong>: wird ausgeführt, wenn nichts passt</li>
+    </ul>
+
+<pre>
+def raum_links():
+    print("Du bist im linken Raum.")
+
+def raum_rechts():
+    print("Du bist im rechten Raum.")
+
+print("Mini-Dungeon startet!")
+
+while True:
+    raum = input("L = Links, R = Rechts, Q = Quit: ")
+
+    if raum == "L":
+        raum_links()
+    elif raum == "R":
+        raum_rechts()
+    elif raum == "Q":
+        break
+    else:
+        print("Ungültige Eingabe.")
+</pre>
+
+    <div class="hint">
+      <strong>Merke:</strong> Das if/elif/else-Konstrukt sorgt dafür,
+      dass genau eine passende Aktion ausgeführt wird.
+    </div>
+  </div>
+
+  <!-- Schritt 2 -->
+  <div class="step">
+    <h1>Mini-Dungeon – Schritt 2</h1>
+    <h2>Inventar als Liste</h2>
+    <p>
+      Jetzt erweitern wir das Spiel um ein Inventar.
+      Das Inventar ist eine Liste, in der Gegenstände gespeichert werden.
+    </p>
+    <p>
+      Mit der Schreibweise <code>inventar.append()</code> wird ein neuer Gegenstand
+      zur Liste hinzugefügt. Der Punkt bedeutet: Wir benutzen eine Funktion,
+      die zur Liste gehört.
+    </p>
+
+<pre>
+inventar = []
+
+def raum_links():
+    print("Du bist im linken Raum.")
+    print("Du findest ein Schwert.")
+    inventar.append("Schwert")
+    print("Inventar:", inventar)
+
+
+def raum_rechts():
+    print("Du bist im rechten Raum.")
+
+print("Mini-Dungeon startet!")
+
+while True:
+    raum = input("L = Links, R = Rechts, Q = Quit: ")
+
+    if raum == "L":
+        raum_links()
+    elif raum == "R":
+        raum_rechts()
+    elif raum == "Q":
+        break
+    else:
+        print("Ungültige Eingabe.")
+</pre>
+
+    <div class="hint">
+      <strong>Merke:</strong> <code>append()</code> verändert die bestehende Liste,
+      sie wird nicht neu erstellt.
+    </div>
+  </div>
+
+  <!-- Schritt 3 -->
+  <div class="step">
+    <h1>Mini-Dungeon – Schritt 3</h1>
+    <h2>Abfrage: Ist ein Gegenstand im Inventar?</h2>
+    <p>
+      Nun passt sich das Verhalten eines Raumes an das Inventar an.
+      Wir prüfen, ob ein bestimmter Gegenstand bereits vorhanden ist.
+    </p>
+
+<pre>
+inventar = []
+
+def raum_links():
+    print("Du bist im linken Raum.")
+    if "Schwert" not in inventar:
+        print("Du findest ein Schwert.")
+        inventar.append("Schwert")
+    else:
+        print("Hier liegt kein Schwert mehr.")
+
+
+def raum_rechts():
+    print("Du bist im rechten Raum.")
+    if "Schwert" in inventar:
+        print("Du fühlst dich sicher mit deinem Schwert.")
+    else:
+        print("Du bist unbewaffnet.")
+
+print("Mini-Dungeon startet!")
+
+while True:
+    raum = input("L = Links, R = Rechts, Q = Quit: ")
+
+    if raum == "L":
+        raum_links()
+    elif raum == "R":
+        raum_rechts()
+    elif raum == "Q":
+        break
+    else:
+        print("Ungültige Eingabe.")
+</pre>
+
+    <div class="hint">
+      <strong>Merke:</strong> Mit <code>in</code> und <code>not in</code>
+      kann geprüft werden, ob ein Objekt in der Liste enthalten ist.
+    </div>
+  </div>
+
+  <!-- Schritt 4 -->
+  <div class="step">
+    <h1>Mini-Dungeon – Schritt 4</h1>
+    <h2>Aktionen durch Benutzereingaben</h2>
+    <p>
+      Jetzt kann der Spieler aktiv entscheiden, ob er einen Gegenstand
+      aufnehmen möchte oder nicht.
+    </p>
+
+<pre>
+inventar = []
+
+def raum_links():
+    print("Du bist im linken Raum.")
+    if "Schwert" not in inventar:
+        aktion = input("Schwert aufheben? (ja/nein): ")
+        if aktion == "ja":
+            inventar.append("Schwert")
+            print("Du nimmst das Schwert mit.")
+        else:
+            print("Du lässt das Schwert liegen.")
+    else:
+        print("Hier liegt nichts mehr.")
+
+
+def raum_rechts():
+    print("Du bist im rechten Raum.")
+    if "Schwert" in inventar:
+        print("Du bist bereit für ein Monster.")
+    else:
+        print("Ohne Schwert bist du vorsichtig.")
+
+print("Mini-Dungeon startet!")
+
+while True:
+    raum = input("L = Links, R = Rechts, Q = Quit: ")
+
+    if raum == "L":
+        raum_links()
+    elif raum == "R":
+        raum_rechts()
+    elif raum == "Q":
+        break
+    else:
+        print("Ungültige Eingabe.")
+</pre>
+
+    <div class="hint">
+      <strong>Merke:</strong> Aktionen entstehen durch <code>input()</code>
+      und werden mit verschachtelten <code>if</code>-Abfragen ausgewertet.
+    </div>
+  </div>
+
+  <!-- Schritt 5 -->
+  <div class="step">
+    <h1>Mini-Dungeon – Schritt 5</h1>
+    <h2>Leben zählen mit einer globalen Variable</h2>
+    <p>
+      Zum Schluss erweitern wir das Spiel um Leben.
+      Die Variable <code>leben</code> liegt außerhalb der Funktionen
+      und ist deshalb global.
+    </p>
+
+<pre>
+inventar = []
+leben = 3
+
+def raum_links():
+    print("Du bist im linken Raum.")
+
+
+def raum_rechts():
+    global leben
+    print("Du bist im rechten Raum.")
+    print("Eine Falle verletzt dich!")
+    leben -= 1
+    print("Verbleibende Leben:", leben)
+
+print("Mini-Dungeon startet!")
+
+while leben > 0:
+    raum = input("L = Links, R = Rechts, Q = Quit: ")
+
+    if raum == "L":
+        raum_links()
+    elif raum == "R":
+        raum_rechts()
+    elif raum == "Q":
+        break
+    else:
+        print("Ungültige Eingabe.")
+
+print("Spiel beendet.")
+</pre>
+
+    <div class="hint">
+      <strong>Warum global?</strong><br>
+      Die Funktion <code>raum_rechts()</code> soll die Anzahl der Leben
+      dauerhaft verändern. Ohne <code>global</code> würde Python eine
+      neue lokale Variable erzeugen.
+    </div>
+  </div>
+
+  <div class="nav">
+    <button id="prev" onclick="prevStep()" disabled>Zurück</button>
+    <button id="next" onclick="nextStep()">Weiter</button>
+  </div>
+
+</div>
+
+<script>
+  let current = 0;
+  const steps = document.querySelectorAll('.step');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  function update() {
+    steps.forEach((s, i) => s.classList.toggle('active', i === current));
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === steps.length - 1;
+  }
+
+  function nextStep() {
+    if (current < steps.length - 1) {
+      current++;
+      update();
+    }
+  }
+
+  function prevStep() {
+    if (current > 0) {
+      current--;
+      update();
+    }
+  }
+</script>
+
+</body>
+</html>
