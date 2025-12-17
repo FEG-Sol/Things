@@ -73,10 +73,10 @@
     <p>
       In diesem ersten Schritt entsteht das Grundgerüst des Spiels.
       Der Spieler kann zwischen zwei Räumen wählen. Das Spiel läuft in einer
-      <code>while</code>-Schleife, bis der Spieler beendet.
+      <code>while</code>-Schleife, bis der Spieler beendet. Die Formulierung <code>while True</code> bedeutet, dass der Code endlos wiederholt wird - außer der Spieler wählt Q. Dann wird mit <code>break</code> die Wiederholung beendet.
     </p>
     <p>
-      Die Auswahl der Räume erfolgt mit <code>if</code>, <code>elif</code> und <code>else</code>:
+      Die Auswahl der Räume erfolgt mit <code>if</code>, <code>elif</code> und <code>else</code>. Das funktioniert wie <code>if/else</code>, aber mit mehreren Möglichkeiten:
     </p>
     <ul>
       <li><strong>if</strong>: prüft die erste Bedingung</li>
@@ -91,6 +91,7 @@ def raum_links():
 def raum_rechts():
     print("Du bist im rechten Raum.")
 
+  
 print("Mini-Dungeon startet!")
 
 while True:
@@ -135,10 +136,10 @@ def raum_links():
     inventar.append("Schwert")
     print("Inventar:", inventar)
 
-
 def raum_rechts():
     print("Du bist im rechten Raum.")
 
+  
 print("Mini-Dungeon startet!")
 
 while True:
@@ -155,8 +156,7 @@ while True:
 </pre>
 
     <div class="hint">
-      <strong>Merke:</strong> <code>append()</code> verändert die bestehende Liste,
-      sie wird nicht neu erstellt.
+      <strong>Merke:</strong> <code>append()</code> fügt ein Element zur Liste hinzu.
     </div>
   </div>
 
@@ -180,7 +180,6 @@ def raum_links():
     else:
         print("Hier liegt kein Schwert mehr.")
 
-
 def raum_rechts():
     print("Du bist im rechten Raum.")
     if "Schwert" in inventar:
@@ -188,6 +187,7 @@ def raum_rechts():
     else:
         print("Du bist unbewaffnet.")
 
+  
 print("Mini-Dungeon startet!")
 
 while True:
@@ -205,7 +205,7 @@ while True:
 
     <div class="hint">
       <strong>Merke:</strong> Mit <code>in</code> und <code>not in</code>
-      kann geprüft werden, ob ein Objekt in der Liste enthalten ist.
+      kann geprüft werden, ob ein Objekt in der Liste enthalten ist oder nicht.
     </div>
   </div>
 
@@ -222,17 +222,12 @@ while True:
 inventar = []
 
 def raum_links():
-    print("Du bist im linken Raum.")
-    if "Schwert" not in inventar:
-        aktion = input("Schwert aufheben? (ja/nein): ")
-        if aktion == "ja":
-            inventar.append("Schwert")
-            print("Du nimmst das Schwert mit.")
-        else:
-            print("Du lässt das Schwert liegen.")
+    print("Du bist im linken Raum. Dort liegt ein Schwert. Nimmst du es mit?")
+    if aktion == "ja":
+        inventar.append("Schwert")
+        print("Du nimmst das Schwert mit.")
     else:
-        print("Hier liegt nichts mehr.")
-
+        print("Du lässt das Schwert liegen.")
 
 def raum_rechts():
     print("Du bist im rechten Raum.")
@@ -265,11 +260,12 @@ while True:
   <!-- Schritt 5 -->
   <div class="step">
     <h1>Mini-Dungeon – Schritt 5</h1>
-    <h2>Leben zählen mit einer globalen Variable</h2>
+    <h2>Leben zählen mit einer Variable</h2>
     <p>
       Zum Schluss erweitern wir das Spiel um Leben.
-      Die Variable <code>leben</code> liegt außerhalb der Funktionen
-      und ist deshalb global.
+      Die Variable <code>leben</code> wird ganz zu Beginn eingeführt ("initialisiert") und später in bestimmten Situationen verändert.
+      Die Schreibweise <code>leben -= 1</code> ist eine Abkürzung für <code>leben = leben-1</code>.
+      Neu ist, dass das Spiel nicht endlos wiederholt wird (mit <code>while True</code>), sondern nur solange <code>leben >0</code> ist.
     </p>
 
 <pre>
@@ -301,7 +297,7 @@ while leben > 0:
     else:
         print("Ungültige Eingabe.")
 
-print("Spiel beendet.")
+print("Game over.")
 </pre>
 
     <div class="hint">
