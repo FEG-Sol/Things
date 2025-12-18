@@ -223,6 +223,7 @@ inventar = []
 
 def raum_links():
     print("Du bist im linken Raum. Dort liegt ein Schwert. Nimmst du es mit?")
+    aktion = input("Ja oder nein?")
     if aktion == "ja":
         inventar.append("Schwert")
         print("Du nimmst das Schwert mit.")
