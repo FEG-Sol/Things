@@ -54,6 +54,7 @@
   .cell.removed {
     background: #eee;
     color: #999;
+    border: 1px solid #eee;
     text-decoration: line-through;
   }
   .cell.locked {
@@ -92,7 +93,7 @@ for (let i = 1; i <= MAX; i++) {
   cells[i] = div;
 }
 
-// Klick auf Zahlen (nur Sieben, keine Prim-Markierung)
+// Klick auf Zahlen
 grid.addEventListener("click", async (e) => {
   const clickedNum = parseInt(e.target.textContent);
   if (
@@ -101,6 +102,8 @@ grid.addEventListener("click", async (e) => {
     clickedNum > 1 &&
     !e.target.classList.contains("removed")
   ) {
+    // angeklickte Zahl bekommt Prime-CSS
+    e.target.classList.add("prime");
     await sieveMultiples(clickedNum);
   }
 });
@@ -108,30 +111,38 @@ grid.addEventListener("click", async (e) => {
 // Button: Ergebnis zeigen
 showResultBtn.addEventListener("click", () => {
   resultShown = true;
-  markPrimesUpTo(MAX);
+  showFinalResult();
 });
 
 async function sieveMultiples(n) {
   for (let j = 2 * n; j <= MAX; j += n) {
     await new Promise(r => setTimeout(r, delayBetweenMarks));
+    // falls die Zahl zuvor als prime markiert war, entfernen
+    cells[j].classList.remove("prime");
     cells[j].classList.add("removed");
   }
 }
 
-function markPrimesUpTo(limit) {
-  let sieve = Array(limit + 1).fill(true);
+function showFinalResult() {
+  let sieve = Array(MAX + 1).fill(true);
   sieve[0] = sieve[1] = false;
 
-  for (let p = 2; p * p <= limit; p++) {
+  for (let p = 2; p * p <= MAX; p++) {
     if (sieve[p]) {
-      for (let k = p * p; k <= limit; k += p) {
+      for (let k = p * p; k <= MAX; k += p) {
         sieve[k] = false;
       }
     }
   }
 
-  for (let i = 2; i <= limit; i++) {
-    if (sieve[i] && !cells[i].classList.contains("removed")) {
+  for (let i = 2; i <= MAX; i++) {
+    // alles zunächst als entfernt markieren
+    cells[i].classList.remove("prime");
+    cells[i].classList.add("removed");
+
+    // echte Primzahlen hervorheben
+    if (sieve[i]) {
+      cells[i].classList.remove("removed");
       cells[i].classList.add("prime");
     }
   }
