@@ -72,7 +72,7 @@
 <body>
 
   <div class="statement">
-    Jedes
+    Jede
     <span class="word-slot"><span class="word-inner" id="wordA"></span></span>
     ist auch ein
     <span class="word-slot"><span class="word-inner" id="wordB"></span></span>.
@@ -117,7 +117,7 @@
       sequence.push(finalWord);
 
       // durations: start fast (~180ms), slow down toward the end
-      const durations = [180, 220, 270, 330, 400, 500];
+      const durations = [100, 200, 270, 330, 600, 900];
 
       for (let i = 0; i < sequence.length; i++) {
         await oneFlip(el, sequence[i], durations[i] || 400);
