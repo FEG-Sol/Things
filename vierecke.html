@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vierecke</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #fff;
+      color: #1a1a1a;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .statement {
+      font-size: clamp(2rem, 5vw, 3.8rem);
+      text-align: center;
+      line-height: 1.6;
+      padding: 0 2rem;
+    }
+
+    .word-slot {
+      display: inline-block;
+      width: 14ch;
+      text-align: center;
+      perspective: 600px;
+    }
+
+    .word-inner {
+      display: inline-block;
+      color: #2c5f9e;
+      transform-origin: center center;
+      backface-visibility: hidden;
+    }
+
+    /* single flip: one full rotation, show new word from 50% onward */
+    @keyframes oneFlip {
+      0%   { transform: rotateX(0deg);   opacity: 1; }
+      25%  { transform: rotateX(90deg);  opacity: 0; }
+      50%  { transform: rotateX(180deg); opacity: 0; }
+      75%  { transform: rotateX(270deg); opacity: 0; }
+      100% { transform: rotateX(360deg); opacity: 1; }
+    }
+
+    .word-inner.flipping {
+      animation: oneFlip var(--flip-dur, 0.28s) ease-in-out forwards;
+    }
+
+    button {
+      margin-top: 3.5rem;
+      padding: 0.75rem 2.5rem;
+      font-size: 1.2rem;
+      font-family: inherit;
+      background: #2c5f9e;
+      color: #fff;
+      border: none;
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover { background: #1e4578; }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+
+  <div class="statement">
+    Jedes
+    <span class="word-slot"><span class="word-inner" id="wordA"></span></span>
+    ist auch ein
+    <span class="word-slot"><span class="word-inner" id="wordB"></span></span>.
+  </div>
+
+  <button onclick="pick()">Nochmal!</button>
+
+  <script>
+    const words = ['Quadrat', 'Rechteck', 'Raute', 'Trapez', 'Parallelogramm', 'Drachenviereck'];
+    let currentA = null, currentB = null;
+    let busy = false;
+
+    // Perform one flip on el: hide current, show nextText
+    function oneFlip(el, nextText, duration) {
+      return new Promise(resolve => {
+        el.style.setProperty('--flip-dur', duration + 'ms');
+        el.classList.remove('flipping');
+        void el.offsetWidth;
+        el.classList.add('flipping');
+        // swap text at halfway point
+        setTimeout(() => { el.textContent = nextText; }, duration * 0.5);
+        setTimeout(() => {
+          el.classList.remove('flipping');
+          resolve();
+        }, duration);
+      });
+    }
+
+    // Animate el through `steps` intermediate random words, then land on `finalWord`
+    // exclude: words not allowed as intermediates (the other slot's final word)
+    async function animateSlot(el, finalWord, exclude) {
+      const STEPS = 5;
+      // build sequence of random intermediates (all different from each other and from final)
+      const pool = words.filter(w => w !== finalWord && w !== exclude);
+      const sequence = [];
+      for (let i = 0; i < STEPS; i++) {
+        let pick;
+        do { pick = pool[Math.floor(Math.random() * pool.length)]; }
+        while (pick === sequence[sequence.length - 1]);
+        sequence.push(pick);
+      }
+      sequence.push(finalWord);
+
+      // durations: start fast (~180ms), slow down toward the end
+      const durations = [180, 220, 270, 330, 400, 500];
+
+      for (let i = 0; i < sequence.length; i++) {
+        await oneFlip(el, sequence[i], durations[i] || 400);
+      }
+    }
+
+    async function pick() {
+      if (busy) return;
+      busy = true;
+
+      let a, b;
+      do { a = words[Math.floor(Math.random() * words.length)]; } while (a === currentA);
+      do { b = words[Math.floor(Math.random() * words.length)]; } while (b === a || b === currentB);
+      currentA = a; currentB = b;
+
+      await Promise.all([
+        animateSlot(document.getElementById('wordA'), a, b),
+        animateSlot(document.getElementById('wordB'), b, a)
+      ]);
+      busy = false;
+    }
+  </script>
+</body>
+</html>
