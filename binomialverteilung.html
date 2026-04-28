@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binomialverteilung Rechner</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: Arial, sans-serif; 
+    font-size: 18px; 
+    margin: 0;
+    padding: 10px;
+    background-color: #f5f5f5;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .container {
+    display: flex;
+    gap: 20px;
+    max-width: none;
+    margin: 0;
+    height: calc(100vh - 20px);
+  }
+  
+  .sidebar {
+    width: 280px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    height: fit-content;
+    position: sticky;
+    top: 10px;
+  }
+  
+  .sidebar h1 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    text-align: center;
+  }
+  
+  .control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .control label {
+    font-weight: bold;
+    font-size: 16px;
+  }
+  
+  .control-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  button {
+    font-size: 18px;
+    padding: 6px 10px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  input[type="number"] {
+    font-size: 18px;
+    padding: 6px;
+    width: 70px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  input[type="number"]:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+  
+  .separator {
+    height: 1px;
+    background-color: #eee;
+    margin: 16px 0;
+  }
+  
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .checkbox-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .checkbox-item label {
+    cursor: pointer;
+    margin: 0;
+    font-weight: normal;
+  }
+  
+  .mode-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .mode-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .mode-item input[type="radio"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .mode-item label {
+    cursor: pointer;
+    margin: 0;
+    font-weight: normal;
+  }
+  
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 0;
+  }
+  
+  h2 {
+    text-align: center;
+    font-size: 28px;
+    margin: 0 0 20px 0;
+    color: #333;
+    flex-shrink: 0;
+  }
+  
+  .chart-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+  }
+  
+  #chart {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  @media (max-width: 900px) {
+    body {
+      height: auto;
+      overflow: auto;
+    }
+    
+    .container {
+      flex-direction: column;
+      height: auto;
+    }
+    
+    .sidebar {
+      width: 100%;
+      position: static;
+    }
+    
+    .main {
+      min-height: 500px;
+    }
+    
+    .control-input-group {
+      flex-wrap: wrap;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div class="sidebar">
+    <h1>Binomialverteilung</h1>
+    
+    <div class="control">
+      <label>n (Versuche)</label>
+      <div class="control-input-group">
+        <button onclick="change('n', -1)">−</button>
+        <input id="n" type="number" value="10" min="0" onchange="update()">
+        <button onclick="change('n', 1)">+</button>
+      </div>
+    </div>
+    
+    <div class="control">
+      <label>p (Wahrscheinlichkeit)</label>
+      <div class="control-input-group">
+        <button onclick="change('p', -0.05)">−</button>
+        <input id="p" type="number" step="0.01" value="0.5" min="0" max="1" onchange="update()">
+        <button onclick="change('p', 0.05)">+</button>
+      </div>
+    </div>
+    
+    <div class="control">
+      <label>k (Treffer)</label>
+      <div class="control-input-group">
+        <button onclick="change('k', -1)">−</button>
+        <input id="k" type="number" value="5" min="0" onchange="update()">
+        <button onclick="change('k', 1)">+</button>
+      </div>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="control">
+      <label style="font-weight: bold;">Modus</label>
+      <div class="mode-group">
+        <div class="mode-item">
+          <input type="radio" id="mode-exact" name="mode" value="exact" checked onchange="update()">
+          <label for="mode-exact">P(X = k)</label>
+        </div>
+        <div class="mode-item">
+          <input type="radio" id="mode-cum" name="mode" value="cum" onchange="update()">
+          <label for="mode-cum">P(X ≤ k)</label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="control">
+      <label style="font-weight: bold;">Anzeige</label>
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          <input type="checkbox" id="meanCheck" onchange="update()">
+          <label for="meanCheck">Erwartungswert</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="fixedAxes" onchange="toggleAxisInputs()">
+          <label for="fixedAxes">Achsen fixieren</label>
+        </div>
+        <div id="axisInputs" style="display: none; padding-left: 28px; margin-top: 8px;">
+          <div class="control" style="margin-bottom: 8px;">
+            <label style="font-size: 14px;">x-Achse:</label>
+            <input id="maxX" type="number" value="10" min="1" onchange="update()" style="width: 100%;">
+          </div>
+          <div class="control" style="margin-bottom: 0;">
+            <label style="font-size: 14px;">y-Achse:</label>
+            <input id="maxY" type="number" step="0.1" value="0.4" min="0.1" onchange="update()" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="main">
+    <h2 id="result"></h2>
+    <div class="chart-container">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+let chart;
+
+// Plugin für Erwartungswert-Linie
+const meanLinePlugin = {
+  id: 'meanLine',
+  afterDraw(chart, args, options) {
+    if (!options.show) return;
+
+    const {ctx, scales: {x, y}} = chart;
+    const mean = options.mean;
+
+    const xPos = x.getPixelForValue(mean);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(xPos, y.top);
+    ctx.lineTo(xPos, y.bottom);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Beschriftung außerhalb, zentriert
+    const text = 'E(X) = ' + formatNumber(mean.toFixed(2));
+    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = 'red';
+    ctx.textAlign = 'center';
+
+    const yOffset = 10; // Abstand über dem Diagramm
+    ctx.fillText(text, xPos, y.top - yOffset);
+
+    ctx.restore();
+  }
+};
+
+function formatNumber(num) {
+  return num.toString().replace('.', ',');
+}
+
+function factorial(n) {
+  if (n <= 1) return 1;
+  let res = 1;
+  for (let i = 2; i <= n; i++) res *= i;
+  return res;
+}
+
+function binom(n, k) {
+  return factorial(n) / (factorial(k) * factorial(n - k));
+}
+
+function binomProb(n, p, k) {
+  return binom(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+}
+
+function change(id, delta) {
+  let el = document.getElementById(id);
+  let val = parseFloat(el.value) + delta;
+
+  if (id === 'p') val = Math.min(1, Math.max(0, val));
+  if (id === 'n' || id === 'k') val = Math.max(0, Math.round(val));
+
+  el.value = val;
+  update();
+}
+
+function toggleAxisInputs() {
+  const fixedAxes = document.getElementById('fixedAxes').checked;
+  const axisInputs = document.getElementById('axisInputs');
+  axisInputs.style.display = fixedAxes ? 'block' : 'none';
+  update();
+}
+
+function getMaxProb(probs) {
+  return Math.max(...probs);
+}
+
+function update() {
+  const n = parseInt(document.getElementById('n').value);
+  const p = parseFloat(document.getElementById('p').value);
+  const k = parseInt(document.getElementById('k').value);
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const fixedAxes = document.getElementById('fixedAxes').checked;
+
+  let probs = [];
+  let labels = [];
+
+  for (let i = 0; i <= n; i++) {
+    labels.push({ x: i, y: binomProb(n, p, i) });
+    probs.push(binomProb(n, p, i));
+  }
+
+  let result = 0;
+  if (mode === 'exact') {
+    result = probs[k] || 0;
+  } else {
+    for (let i = 0; i <= k; i++) result += probs[i] || 0;
+  }
+
+  let labelText = mode === 'exact' ? 'P(X = k)' : 'P(X ≤ k)';
+  document.getElementById('result').innerText = labelText + ' = ' + formatNumber(result.toFixed(4));
+
+  const colors = probs.map((_, i) => {
+    if (mode === 'exact') return i === k ? 'blue' : 'lightblue';
+    else return i <= k ? 'blue' : 'lightblue';
+  });
+
+  const mean = n * p;
+
+  const data = {
+    datasets: [{
+      label: 'P(X=k)',
+      data: labels,
+      backgroundColor: colors,
+      barPercentage: 1.0,
+      categoryPercentage: 1.0
+    }]
+  };
+
+  // Bestimme die Achsengrenzen
+  let yMax = undefined;
+  let xMax = undefined;
+  
+  if (fixedAxes) {
+    yMax = parseFloat(document.getElementById('maxY').value);
+    xMax = parseInt(document.getElementById('maxX').value);
+  }
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 50
+      }
+    },
+    scales: {
+      x: { 
+        type: 'linear',
+        min: 0,
+        max: xMax !== undefined ? xMax : n,
+        title: { display: true, text: 'k', font: { size: 22 } },
+        ticks: { font: { size: 22 }, stepSize: 1 }
+      },
+      y: { 
+        beginAtZero: true,
+        ...(yMax !== undefined && { max: yMax }),
+        title: { display: true, text: 'Wahrscheinlichkeit', font: { size: 22 } },
+        ticks: { font: { size: 22 } }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      meanLine: {
+        show: document.getElementById('meanCheck').checked,
+        mean: mean
+      }
+    }
+  };
+
+  if (chart) {
+    chart.data.datasets[0].data = labels;
+    chart.data.datasets[0].backgroundColor = colors;
+    chart.options = options;
+    chart.update();
+  } else {
+    chart = new Chart(document.getElementById('chart'), {
+      plugins: [meanLinePlugin],
+      type: 'bar',
+      data: data,
+      options: {
+        ...options,
+        animation: {
+          duration: 500
+        }
+      }
+    });
+  }
+
+}
+
+update();
+</script>
+
+</body>
+</html>
