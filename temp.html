@@ -96,7 +96,7 @@
   input[type="number"] {
     font-size: 18px;
     padding: 6px;
-    width: 100px;
+    width: 70px;
     text-align: center;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -197,43 +197,32 @@
   
   @media (max-width: 900px) {
     body {
-      height: 100vh;
-      overflow: hidden;
+      height: auto;
+      overflow: auto;
     }
     
     .container {
       flex-direction: column;
-      height: calc(100vh - 20px);
+      height: auto;
     }
     
     .sidebar {
       width: 100%;
       position: static;
-      height: auto;
-      max-height: 25vh;
-      overflow-y: auto;
     }
     
     .main {
-      flex: 1;
-      min-height: 0;
-      padding: 10px;
+      min-height: 500px;
     }
     
-    h2 {
-      font-size: 20px;
-      margin: 0 0 10px 0;
-    }
-    
-    .chart-container {
-      flex: 1;
-      min-height: 300px;
+    .control-input-group {
+      flex-wrap: wrap;
     }
   }
 </style>
 </head>
 <body>
- 
+
 <div class="container">
   
   <div class="sidebar">
@@ -251,9 +240,9 @@
     <div class="control">
       <label>p (Wahrscheinlichkeit)</label>
       <div class="control-input-group">
-        <button onclick="change('p', -0.01)">−</button>
+        <button onclick="change('p', -0.05)">−</button>
         <input id="p" type="number" step="0.01" value="0.5" min="0" max="1" onchange="update()">
-        <button onclick="change('p', 0.01)">+</button>
+        <button onclick="change('p', 0.05)">+</button>
       </div>
     </div>
     
@@ -317,21 +306,21 @@
   </div>
   
 </div>
- 
+
 <script>
 let chart;
- 
+
 // Plugin für Erwartungswert-Linie
 const meanLinePlugin = {
   id: 'meanLine',
   afterDraw(chart, args, options) {
     if (!options.show) return;
- 
+
     const {ctx, scales: {x, y}} = chart;
     const mean = options.mean;
- 
+
     const xPos = x.getPixelForValue(mean);
- 
+
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(xPos, y.top);
@@ -339,102 +328,93 @@ const meanLinePlugin = {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 3;
     ctx.stroke();
- 
+
     // Beschriftung außerhalb, zentriert
     const text = 'E(X) = ' + formatNumber(mean.toFixed(2));
     ctx.font = 'bold 28px Arial';
     ctx.fillStyle = 'red';
     ctx.textAlign = 'center';
- 
+
     const yOffset = 10; // Abstand über dem Diagramm
     ctx.fillText(text, xPos, y.top - yOffset);
- 
+
     ctx.restore();
   }
 };
- 
+
 function formatNumber(num) {
   return num.toString().replace('.', ',');
 }
- 
+
 function factorial(n) {
   if (n <= 1) return 1;
   let res = 1;
   for (let i = 2; i <= n; i++) res *= i;
   return res;
 }
- 
+
 function binom(n, k) {
   return factorial(n) / (factorial(k) * factorial(n - k));
 }
- 
+
 function binomProb(n, p, k) {
   return binom(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
 }
- 
+
 function change(id, delta) {
   let el = document.getElementById(id);
   let val = parseFloat(el.value) + delta;
- 
-  if (id === 'p') {
-    val = Math.min(1, Math.max(0, val));
-    // Runde auf 2 Dezimalstellen um Floating-Point-Fehler zu vermeiden
-    val = Math.round(val * 100) / 100;
-  }
+
+  if (id === 'p') val = Math.min(1, Math.max(0, val));
   if (id === 'n' || id === 'k') val = Math.max(0, Math.round(val));
- 
+
   el.value = val;
   update();
 }
- 
+
 function toggleAxisInputs() {
   const fixedAxes = document.getElementById('fixedAxes').checked;
   const axisInputs = document.getElementById('axisInputs');
   axisInputs.style.display = fixedAxes ? 'block' : 'none';
   update();
 }
- 
+
 function getMaxProb(probs) {
   return Math.max(...probs);
 }
- 
+
 function update() {
-  let p = parseFloat(document.getElementById('p').value);
-  
-  // Runde p auf 3 Dezimalstellen um Floating-Point-Fehler zu vermeiden
-  p = Math.round(p * 1000) / 1000;
-  document.getElementById('p').value = p;
-  
   const n = parseInt(document.getElementById('n').value);
+  const p = parseFloat(document.getElementById('p').value);
   const k = parseInt(document.getElementById('k').value);
   const mode = document.querySelector('input[name="mode"]:checked').value;
   const fixedAxes = document.getElementById('fixedAxes').checked;
- 
+
   let probs = [];
   let labels = [];
- 
+
   for (let i = 0; i <= n; i++) {
     labels.push({ x: i, y: binomProb(n, p, i) });
     probs.push(binomProb(n, p, i));
   }
- 
+
   let result = 0;
   if (mode === 'exact') {
     result = probs[k] || 0;
   } else {
     for (let i = 0; i <= k; i++) result += probs[i] || 0;
   }
- 
+
   let labelText = mode === 'exact' ? 'P(X = k)' : 'P(X ≤ k)';
   document.getElementById('result').innerText = labelText + ' = ' + formatNumber(result.toFixed(4));
- 
+
   const colors = probs.map((_, i) => {
     if (mode === 'exact') return i === k ? 'blue' : 'lightblue';
     else return i <= k ? 'blue' : 'lightblue';
   });
- 
+
   const mean = n * p;
- 
+
   const data = {
     datasets: [{
       label: 'P(X=k)',
@@ -444,7 +424,7 @@ function update() {
       categoryPercentage: 1.0
     }]
   };
- 
+
   // Bestimme die Achsengrenzen
   let yMax = undefined;
   let xMax = undefined;
@@ -453,7 +433,7 @@ function update() {
     yMax = parseFloat(document.getElementById('maxY').value);
     xMax = parseInt(document.getElementById('maxX').value);
   }
- 
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -485,7 +465,7 @@ function update() {
       }
     }
   };
- 
+
   if (chart) {
     chart.data.datasets[0].data = labels;
     chart.data.datasets[0].backgroundColor = colors;
@@ -504,11 +484,11 @@ function update() {
       }
     });
   }
- 
+
 }
- 
+
 update();
 </script>
- 
+
 </body>
 </html>
