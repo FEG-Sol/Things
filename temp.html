@@ -399,7 +399,7 @@ function change(id, delta) {
  
   if (id === 'p') {
     val = Math.min(1, Math.max(0, val));
-    el.value = val.toFixed(3);
+    el.value = Number(val.toFixed(3));
   } else if (id === 'n' || id === 'k') {
     val = Math.max(0, Math.round(val));
     el.value = val;
@@ -442,7 +442,7 @@ function update() {
   }
  
   let labelText = mode === 'exact' ? 'P(X = k)' : 'P(X ≤ k)';
-  document.getElementById('result').innerText = labelText + ' = ' + formatNumber(result.toFixed(4));
+  document.getElementById('result').innerText = labelText + ' = ' + formatNumber(result.toFixed(3));
  
   const colors = probs.map((_, i) => {
     if (mode === 'exact') return i === k ? 'blue' : 'lightblue';
