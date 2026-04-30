@@ -247,7 +247,7 @@
 <div class="container">
   
   <div class="sidebar">
-    <h1>Einstellungen</h1>
+    <h1>Binomialverteilung</h1>
     
     <div class="control">
       <label>n (Versuche)</label>
@@ -374,7 +374,7 @@ function formatAndUpdate(fieldId) {
   if (isNaN(val)) val = 0.5;
   val = Math.min(1, Math.max(0, val));
   
-  field.value = val.toFixed(3);
+  field.value = Number(val.toFixed(3));
   update();
 }
  
