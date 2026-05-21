@@ -140,14 +140,22 @@ function randomInt(min,max){
   return Math.floor(Math.random()*(max-min+1))+min;
 }
 
-function formatNumber(n){
-  return n < 0 ? "(" + n + ")" : n;
+function formatNumber(n, isSecond = false){
+
+  // Klammern nur bei der zweiten Zahl,
+  // wenn sonst zwei Zeichen direkt hintereinander stehen würden
+
+  if(isSecond && n < 0){
+    return "(" + n + ")";
+  }
+
+  return n;
 }
 
 function updateEquation(){
 
   let text =
-    `${formatNumber(startValue)} ${operation} ${formatNumber(secondValue)}`;
+    `${formatNumber(startValue)} ${operation} ${formatNumber(secondValue, true)}`;
 
   if(showResult){
     text += ` = <span class="green">${result}</span>`;
@@ -155,7 +163,6 @@ function updateEquation(){
 
   document.getElementById("equation").innerHTML = text;
 }
-
 function createStory(){
 
   const word =
