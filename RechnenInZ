@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ganze Zahlen</title>
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:#f5f7fb;
+      overflow:hidden;
+    }
+
+    .container{
+      width:100%;
+      box-sizing:border-box;
+      padding:20px;
+      text-align:center;
+    }
+
+    .controls{
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-bottom:25px;
+    }
+
+    button{
+      padding:10px 18px;
+      border:none;
+      border-radius:10px;
+      background:#2b6cff;
+      color:white;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    button:hover{
+      background:#184fc7;
+    }
+
+    label{
+      background:white;
+      padding:10px 14px;
+      border-radius:10px;
+      font-size:17px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    #equation{
+      font-size:60px;
+      font-weight:bold;
+      margin:30px 0;
+      min-height:80px;
+    }
+
+    #story{
+      font-size:32px;
+      min-height:70px;
+      opacity:0;
+      transition:0.4s;
+      margin-bottom:30px;
+    }
+
+    #story.visible{
+      opacity:1;
+    }
+
+    .blue{
+      color:#1565ff;
+      font-weight:bold;
+    }
+
+    .green{
+      color:#19a54a;
+      font-weight:bold;
+    }
+
+    canvas{
+      width:100%;
+      height:320px;
+      background:white;
+      border-radius:16px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.08);
+      display:block;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="controls">
+
+    <button onclick="newTask()">
+      Neue Rechnung
+    </button>
+
+    <button onclick="toggleStory()">
+      Satz einblenden
+    </button>
+
+    <button onclick="toggleResult()">
+      Ergebnis anzeigen
+    </button>
+
+    <label>
+      <input type="checkbox" id="negativeCheckbox">
+      Auch negative zweite Zahlen erlauben
+    </label>
+
+  </div>
+
+  <div id="equation"></div>
+
+  <div id="story"></div>
+
+  <canvas id="canvas"></canvas>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let startValue;
+let secondValue;
+let operation;
+let result;
+
+let showStory = false;
+let showResult = false;
+
+function randomInt(min,max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function formatNumber(n){
+  return n < 0 ? "(" + n + ")" : n;
+}
+
+function updateEquation(){
+
+  let text =
+    `${formatNumber(startValue)} ${operation} ${formatNumber(secondValue)}`;
+
+  if(showResult){
+    text += ` = <span class="green">${result}</span>`;
+  }
+
+  document.getElementById("equation").innerHTML = text;
+}
+
+function createStory(){
+
+  const word =
+    operation === "+" ? "erhältst" : "verlierst";
+
+  document.getElementById("story").innerHTML =
+    `Auf deinem Konto sind 
+    <span class="blue">${startValue} €</span>. 
+    Du <span class="blue">${word}</span> 
+    <span class="blue">${secondValue} €</span>.`;
+}
+
+function toggleStory(){
+
+  showStory = !showStory;
+
+  const story = document.getElementById("story");
+
+  if(showStory){
+    story.classList.add("visible");
+  }else{
+    story.classList.remove("visible");
+  }
+}
+
+function toggleResult(){
+
+  showResult = !showResult;
+
+  updateEquation();
+  drawNumberline();
+}
+
+function newTask(){
+
+  showStory = false;
+  showResult = false;
+
+  document.getElementById("story")
+    .classList.remove("visible");
+
+  // Erste Zahl immer ganze Zahl
+  startValue = randomInt(-20,20);
+
+  const allowNegativeSecond =
+    document.getElementById("negativeCheckbox").checked;
+
+  if(allowNegativeSecond){
+
+    secondValue = randomInt(-20,20);
+
+    while(secondValue === 0){
+      secondValue = randomInt(-20,20);
+    }
+
+  }else{
+
+    secondValue = randomInt(1,20);
+  }
+
+  operation = Math.random() < 0.5 ? "+" : "-";
+
+  if(operation === "+"){
+    result = startValue + secondValue;
+  }else{
+    result = startValue - secondValue;
+  }
+
+  updateEquation();
+  createStory();
+  drawNumberline();
+}
+
+function resizeCanvas(){
+
+  canvas.width = canvas.clientWidth;
+  canvas.height = 320;
+
+  drawNumberline();
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+function getLabelStep(stepPixels){
+
+  if(stepPixels >= 45){
+    return 1;
+  }
+
+  if(stepPixels >= 25){
+    return 2;
+  }
+
+  if(stepPixels >= 12){
+    return 5;
+  }
+
+  return 10;
+}
+
+function drawNumberline(){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const minVal =
+    Math.min(startValue, result);
+
+  const maxVal =
+    Math.max(startValue, result);
+
+  // Mehr Puffer
+  const absMax =
+    Math.max(Math.abs(minVal), Math.abs(maxVal)) + 8;
+
+  const min = -absMax;
+  const max = absMax;
+
+  const width = canvas.width;
+  const centerY = 150;
+
+  const paddingLeft = 80;
+  const paddingRight = 110;
+
+  const usableWidth =
+    width - paddingLeft - paddingRight;
+
+  const range = max - min;
+
+  const step = usableWidth / range;
+
+  const labelStep = getLabelStep(step);
+
+  function getX(value){
+    return paddingLeft + (value - min) * step;
+  }
+
+  // Zahlenstrahl
+  ctx.beginPath();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#222";
+
+  ctx.moveTo(getX(min), centerY);
+  ctx.lineTo(getX(max), centerY);
+
+  ctx.stroke();
+
+  // Spitze rechts
+  const arrowX = getX(max);
+
+  ctx.beginPath();
+  ctx.fillStyle = "#222";
+
+  ctx.moveTo(arrowX + 18, centerY);
+  ctx.lineTo(arrowX - 6, centerY - 10);
+  ctx.lineTo(arrowX - 6, centerY + 10);
+
+  ctx.closePath();
+  ctx.fill();
+
+  // Ticks + Beschriftungen
+  for(let i=min; i<=max; i++){
+
+    const x = getX(i);
+
+    ctx.beginPath();
+
+    ctx.lineWidth = i === 0 ? 4 : 2;
+    ctx.strokeStyle = i === 0 ? "#000" : "#555";
+
+    ctx.moveTo(x, centerY - 14);
+    ctx.lineTo(x, centerY + 14);
+
+    ctx.stroke();
+
+    // Nur genügend Abstand beschriften
+    if(i === 0 || i % labelStep === 0){
+
+      ctx.font = "24px Arial";
+      ctx.fillStyle = "#222";
+      ctx.textAlign = "center";
+
+      ctx.fillText(i, x, centerY + 55);
+    }
+  }
+
+  // Startwert blau
+  const startX = getX(startValue);
+
+  ctx.beginPath();
+  ctx.fillStyle = "#1565ff";
+
+  ctx.arc(startX, centerY, 12, 0, Math.PI*2);
+
+  ctx.fill();
+
+  // Ergebnis grün
+  if(showResult){
+
+    const resultX = getX(result);
+
+    ctx.beginPath();
+    ctx.fillStyle = "#19a54a";
+
+    ctx.arc(resultX, centerY, 12, 0, Math.PI*2);
+
+    ctx.fill();
+  }
+}
+
+resizeCanvas();
+newTask();
+
+</script>
+
+</body>
+</html>
