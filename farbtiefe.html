@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Farbtiefe-Reduzierung – kuh.jpg</title>
+<style>
+  :root{
+    --bg:#1b1d1f;
+    --panel:#242628;
+    --ink:#e8e6e1;
+    --muted:#9a9d9f;
+    --accent:#5fb3a3;
+    --border:#35383a;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  html,body{
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    height:100%;
+  }
+  .wrap{
+    max-width:1400px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+    box-sizing:border-box;
+  }
+  h1{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  p.sub{
+    color:var(--muted);
+    margin:0 0 24px;
+    font-size:14px;
+  }
+  .controls{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 20px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .controls label{
+    font-size:14px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  input[type=range]{
+    flex:1;
+    min-width:220px;
+    accent-color:var(--accent);
+  }
+  .readout{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .readout .item{
+    min-width:150px;
+  }
+  .readout .item .num{
+    font-size:18px;
+    font-weight:600;
+    color:var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout .item .lbl{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .stage{
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+    height:70vh;
+    background:
+      linear-gradient(45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2c2e 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2c2e 75%);
+    background-size:20px 20px;
+    background-position:0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color:#1f2123;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  canvas{
+    display:block;
+    max-width:100%;
+    max-height:100%;
+  }
+  .zoomlabel{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .zoomlabel .val{
+    color:var(--ink);
+    font-weight:600;
+  }
+  .status{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .status.error{
+    color:#e08a7a;
+  }
+  .hint{
+    margin-top:28px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.5;
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Farbtiefe-Reduzierung</h1>
+  <p class="sub">kuh.jpg – Schieberegler steuert die Bit-Tiefe pro Farbkanal (R, G, B gleich)</p>
+
+  <div class="controls">
+    <label for="bits">Bit pro Kanal</label>
+    <input type="range" id="bits" min="1" max="8" step="1" value="8">
+    <div class="readout">
+      <div class="item">
+        <div class="num" id="bitsOut">8 Bit / Kanal</div>
+        <div class="lbl">24 Bit gesamt (3 × 8)</div>
+      </div>
+      <div class="item">
+        <div class="num" id="levelsOut">256 Stufen / Kanal</div>
+        <div class="lbl">pro Farbkanal</div>
+      </div>
+      <div class="item">
+        <div class="num" id="colorsOut">16.777.216 Farben</div>
+        <div class="lbl">theoretisch max. darstellbar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="zoomlabel" id="zoomlabel">Ansicht: <span class="val">gesamtes Bild eingepasst</span></div>
+  <div class="status" id="status">Lade kuh.jpg …</div>
+
+  <div class="hint">
+    Das Bild wird immer vollständig und proportional in den Rahmen eingepasst angezeigt – kein Scrollen nötig.<br>
+    Hinweis: Wird diese Datei direkt per Doppelklick (file://) geöffnet, blockieren manche Browser (v. a. Chrome) aus Sicherheitsgründen den Pixelzugriff auf lokale Bilder ("tainted canvas"). Falls die Reduzierung nicht funktioniert, die Seite über einen lokalen Webserver öffnen, z. B. mit <code>python3 -m http.server</code> im selben Ordner wie kuh.jpg.
+  </div>
+</div>
+
+<script>
+(function(){
+  const img = new Image();
+
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const slider = document.getElementById('bits');
+  const bitsOut = document.getElementById('bitsOut');
+  const levelsOut = document.getElementById('levelsOut');
+  const colorsOut = document.getElementById('colorsOut');
+  const status = document.getElementById('status');
+  const zoomlabel = document.getElementById('zoomlabel');
+
+  let originalData = null; // ImageData mit vollen 8-Bit-Werten
+  let width = 0, height = 0;
+
+  function fmt(n){
+    return n.toLocaleString('de-DE');
+  }
+
+  function updateReadout(bits){
+    const levels = Math.pow(2, bits);
+    bitsOut.textContent = bits + ' Bit / Kanal';
+    document.querySelector('.readout .item:nth-child(1) .lbl').textContent =
+      (bits * 3) + ' Bit gesamt (3 × ' + bits + ')';
+    levelsOut.textContent = fmt(levels) + ' Stufen / Kanal';
+    colorsOut.textContent = fmt(Math.pow(levels, 3)) + ' Farben';
+  }
+
+  function quantize(bits){
+    if (!originalData) return;
+    const levels = Math.pow(2, bits);
+    const step = 255 / (levels - 1);
+
+    const src = originalData.data;
+    const out = ctx.createImageData(width, height);
+    const dst = out.data;
+
+    // Lookup-Tabelle für die 256 möglichen Eingabewerte je Kanal
+    const lut = new Uint8ClampedArray(256);
+    for (let v = 0; v < 256; v++){
+      lut[v] = Math.round(Math.round(v / step) * step);
+    }
+
+    for (let i = 0; i < src.length; i += 4){
+      dst[i]     = lut[src[i]];
+      dst[i + 1] = lut[src[i + 1]];
+      dst[i + 2] = lut[src[i + 2]];
+      dst[i + 3] = src[i + 3];
+    }
+
+    ctx.putImageData(out, 0, 0);
+  }
+
+  slider.addEventListener('input', () => {
+    const bits = parseInt(slider.value, 10);
+    updateReadout(bits);
+    try {
+      quantize(bits);
+    } catch (e) {
+      status.textContent = 'Fehler beim Verarbeiten der Bilddaten: ' + e.message;
+      status.classList.add('error');
+    }
+  });
+
+  img.onload = () => {
+    width = img.naturalWidth;
+    height = img.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0);
+
+    try {
+      originalData = ctx.getImageData(0, 0, width, height);
+      status.textContent = 'kuh.jpg geladen (' + width + ' × ' + height + ' px). Regler bewegen, um die Farbtiefe zu reduzieren.';
+      updateReadout(parseInt(slider.value, 10));
+    } catch (e) {
+      status.textContent = 'Pixelzugriff blockiert (' + e.message + '). Diese Seite muss über einen lokalen Webserver geöffnet werden (nicht per Doppelklick/file://), damit der Canvas-Pixelzugriff erlaubt ist.';
+      status.classList.add('error');
+    }
+  };
+
+  img.onerror = () => {
+    status.textContent = 'kuh.jpg konnte nicht geladen werden. Prüfen: liegt die Datei exakt als "kuh.jpg" (Groß-/Kleinschreibung beachten) im selben Ordner wie diese HTML-Datei? Falls ja, hilft oft ein Neuladen der Seite (Ctrl/Cmd+R) oder das Öffnen über einen lokalen Webserver statt per Doppelklick.';
+    status.classList.add('error');
+  };
+
+  img.src = 'kuh.jpg';
+})();
+</script>
+</body>
+</html>
