@@ -77,7 +77,7 @@
   .stage{
     border:1px solid var(--border);
     border-radius:8px;
-    overflow:hidden;
+    overflow:auto;
     height:70vh;
     background:
       linear-gradient(45deg, #2a2c2e 25%, transparent 25%),
@@ -87,12 +87,16 @@
     background-size:20px 20px;
     background-position:0 0, 0 10px, 10px -10px, -10px 0px;
     background-color:#1f2123;
+  }
+  canvas{
+    display:block;
+  }
+  .stage.fit{
     display:flex;
     align-items:center;
     justify-content:center;
   }
-  canvas{
-    display:block;
+  .stage.fit canvas{
     max-width:100%;
     max-height:100%;
   }
@@ -131,6 +135,10 @@
   <div class="controls">
     <label for="bits">Bit pro Kanal</label>
     <input type="range" id="bits" min="1" max="8" step="1" value="8">
+    <label style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+      <input type="checkbox" id="zoomToggle" style="accent-color:var(--accent);">
+      100&nbsp;% Zoom
+    </label>
     <div class="readout">
       <div class="item">
         <div class="num" id="bitsOut">8 Bit / Kanal</div>
@@ -147,7 +155,7 @@
     </div>
   </div>
 
-  <div class="stage" id="stage">
+  <div class="stage fit" id="stage">
     <canvas id="canvas"></canvas>
   </div>
 
@@ -155,7 +163,7 @@
   <div class="status" id="status">Lade kuh.jpg …</div>
 
   <div class="hint">
-    Das Bild wird immer vollständig und proportional in den Rahmen eingepasst angezeigt – kein Scrollen nötig.<br>
+    Standardmäßig wird das Bild vollständig eingepasst angezeigt. Mit "100&nbsp;% Zoom" wird es in Originalgröße (1 Bildpixel = 1 Anzeigepixel) dargestellt; passt es dann nicht in den Rahmen, erscheinen Scrollbars zum Navigieren.<br>
     Hinweis: Wird diese Datei direkt per Doppelklick (file://) geöffnet, blockieren manche Browser (v. a. Chrome) aus Sicherheitsgründen den Pixelzugriff auf lokale Bilder ("tainted canvas"). Falls die Reduzierung nicht funktioniert, die Seite über einen lokalen Webserver öffnen, z. B. mit <code>python3 -m http.server</code> im selben Ordner wie kuh.jpg.
   </div>
 </div>
@@ -173,9 +181,25 @@
   const colorsOut = document.getElementById('colorsOut');
   const status = document.getElementById('status');
   const zoomlabel = document.getElementById('zoomlabel');
+  const zoomToggle = document.getElementById('zoomToggle');
+  zoomToggle.checked = false; // beim Laden immer eingepasste Ansicht, unabhängig vom Browser-Formcache
 
   let originalData = null; // ImageData mit vollen 8-Bit-Werten
   let width = 0, height = 0;
+
+  function applyViewMode(){
+    if (zoomToggle.checked){
+      // 100%-Ansicht: Originalgröße, Container scrollt bei Bedarf
+      stage.classList.remove('fit');
+      zoomlabel.innerHTML = 'Ansicht: <span class="val">100&nbsp;% (1 Bildpixel = 1 Pixel)</span> – bei Bedarf im Bild scrollen';
+    } else {
+      // Eingepasste Ansicht: CSS skaliert proportional, kein Scrollen
+      stage.classList.add('fit');
+      zoomlabel.innerHTML = 'Ansicht: <span class="val">gesamtes Bild eingepasst</span>';
+    }
+  }
+
+  zoomToggle.addEventListener('change', applyViewMode);
 
   function fmt(n){
     return n.toLocaleString('de-DE');
@@ -237,6 +261,7 @@
       originalData = ctx.getImageData(0, 0, width, height);
       status.textContent = 'kuh.jpg geladen (' + width + ' × ' + height + ' px). Regler bewegen, um die Farbtiefe zu reduzieren.';
       updateReadout(parseInt(slider.value, 10));
+      applyViewMode();
     } catch (e) {
       status.textContent = 'Pixelzugriff blockiert (' + e.message + '). Diese Seite muss über einen lokalen Webserver geöffnet werden (nicht per Doppelklick/file://), damit der Canvas-Pixelzugriff erlaubt ist.';
       status.classList.add('error');
