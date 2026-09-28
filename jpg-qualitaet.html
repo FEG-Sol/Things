@@ -135,10 +135,14 @@
   <div class="controls">
     <label for="quality">JPG-Qualität</label>
     <input type="range" id="quality" min="1" max="100" step="1" value="100">
-    <label style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
-      <input type="checkbox" id="zoomToggle" style="accent-color:var(--accent);">
-      100&nbsp;% Zoom
-    </label>
+    <label for="zoomSelect">Ansicht</label>
+    <select id="zoomSelect" style="background:var(--bg); color:var(--ink); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-size:14px;">
+      <option value="fit" selected>Eingepasst</option>
+      <option value="100">100&nbsp;%</option>
+      <option value="200">200&nbsp;%</option>
+      <option value="400">400&nbsp;%</option>
+      <option value="800">800&nbsp;%</option>
+    </select>
     <div class="readout">
       <div class="item">
         <div class="num" id="qualityOut">100 %</div>
@@ -163,10 +167,8 @@
   <div class="status" id="status">Lade kuh.jpg …</div>
 
   <div class="hint">
-    Standardmäßig wird das Bild vollständig eingepasst angezeigt. Mit "100&nbsp;% Zoom" wird es in Originalgröße (1 Bildpixel = 1 Anzeigepixel) dargestellt; passt es dann nicht in den Rahmen, erscheinen Scrollbars zum Navigieren. JPG-Artefakte sind vor allem im 100&nbsp;%-Zoom gut zu erkennen.<br>
-    Die Vorschau entsteht durch erneutes Kodieren des geladenen Bildes im Browser (Canvas → JPEG). Die Qualität bezieht sich daher auf diese Neukodierung; die Dateigröße kann von der eines anderen JPG-Encoders abweichen.<br>
-    Hinweis: Wird diese Datei direkt per Doppelklick (file://) geöffnet, blockieren manche Browser (v. a. Chrome) aus Sicherheitsgründen den Pixelzugriff auf lokale Bilder ("tainted canvas"). Falls die Vorschau nicht funktioniert, die Seite über einen lokalen Webserver öffnen, z. B. mit <code>python3 -m http.server</code> im selben Ordner wie kuh.jpg.
-  </div>
+    Standardmäßig wird das Bild vollständig eingepasst angezeigt. Über "Ansicht" lässt es sich in 100&nbsp;%, 200&nbsp;%, 400&nbsp;% oder 800&nbsp;% darstellen.<br>
+    </div>
 </div>
 
 <script>
@@ -181,8 +183,8 @@
   const ratioOut = document.getElementById('ratioOut');
   const status = document.getElementById('status');
   const zoomlabel = document.getElementById('zoomlabel');
-  const zoomToggle = document.getElementById('zoomToggle');
-  zoomToggle.checked = false; // beim Laden immer eingepasste Ansicht
+  const zoomSelect = document.getElementById('zoomSelect');
+  zoomSelect.value = 'fit'; // beim Laden immer eingepasste Ansicht
   slider.value = 100;
 
   const canvas = document.createElement('canvas');
@@ -194,15 +196,25 @@
   let currentUrl = null;  // aktuelle Blob-URL, wird beim Wechsel freigegeben
 
   function applyViewMode(){
-    if (zoomToggle.checked){
-      stage.classList.remove('fit');
-      zoomlabel.innerHTML = 'Ansicht: <span class="val">100&nbsp;% (1 Bildpixel = 1 Pixel)</span> – bei Bedarf im Bild scrollen';
-    } else {
+    const v = zoomSelect.value;
+    if (v === 'fit'){
       stage.classList.add('fit');
+      preview.style.width = '';
+      preview.style.height = '';
+      preview.style.imageRendering = '';
       zoomlabel.innerHTML = 'Ansicht: <span class="val">gesamtes Bild eingepasst</span>';
+    } else {
+      if (!width) return; // Bild noch nicht geladen
+      const z = parseInt(v, 10) / 100;
+      stage.classList.remove('fit');
+      preview.style.width = Math.round(width * z) + 'px';
+      preview.style.height = Math.round(height * z) + 'px';
+      // Bei Vergrößerung einzelne Pixel scharf darstellen statt weichzuzeichnen
+      preview.style.imageRendering = z > 1 ? 'pixelated' : '';
+      zoomlabel.innerHTML = 'Ansicht: <span class="val">' + v + '&nbsp;%' + (z === 1 ? ' (1 Bildpixel = 1 Pixel)' : ' (Bildpixel vergrößert)') + '</span> – bei Bedarf im Bild scrollen';
     }
   }
-  zoomToggle.addEventListener('change', applyViewMode);
+  zoomSelect.addEventListener('change', applyViewMode);
 
   function fmtNum(n){
     return n.toLocaleString('de-DE');
