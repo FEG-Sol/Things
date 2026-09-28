@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>JPG-Qualität – kuh.jpg</title>
+<style>
+  :root{
+    --bg:#1b1d1f;
+    --panel:#242628;
+    --ink:#e8e6e1;
+    --muted:#9a9d9f;
+    --accent:#5fb3a3;
+    --border:#35383a;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  html,body{
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    height:100%;
+  }
+  .wrap{
+    max-width:1400px;
+    margin:0 auto;
+    padding:28px 24px 60px;
+    box-sizing:border-box;
+  }
+  h1{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  p.sub{
+    color:var(--muted);
+    margin:0 0 24px;
+    font-size:14px;
+  }
+  .controls{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 20px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .controls label{
+    font-size:14px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  input[type=range]{
+    flex:1;
+    min-width:220px;
+    accent-color:var(--accent);
+  }
+  .readout{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .readout .item{
+    min-width:150px;
+  }
+  .readout .item .num{
+    font-size:18px;
+    font-weight:600;
+    color:var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout .item .lbl{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .stage{
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:auto;
+    height:70vh;
+    background:
+      linear-gradient(45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2c2e 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2c2e 75%);
+    background-size:20px 20px;
+    background-position:0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color:#1f2123;
+  }
+  #preview{
+    display:block;
+  }
+  .stage.fit{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .stage.fit #preview{
+    max-width:100%;
+    max-height:100%;
+  }
+  .zoomlabel{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .zoomlabel .val{
+    color:var(--ink);
+    font-weight:600;
+  }
+  .status{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .status.error{
+    color:#e08a7a;
+  }
+  .hint{
+    margin-top:28px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.5;
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>JPG-Qualität</h1>
+  <p class="sub">kuh.jpg – Schieberegler steuert die JPG-Qualität, das Bild wird live neu komprimiert</p>
+
+  <div class="controls">
+    <label for="quality">JPG-Qualität</label>
+    <input type="range" id="quality" min="1" max="100" step="1" value="100">
+    <label style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+      <input type="checkbox" id="zoomToggle" style="accent-color:var(--accent);">
+      100&nbsp;% Zoom
+    </label>
+    <div class="readout">
+      <div class="item">
+        <div class="num" id="qualityOut">100 %</div>
+        <div class="lbl">Qualität (Wert 1–100)</div>
+      </div>
+      <div class="item">
+        <div class="num" id="sizeOut">–</div>
+        <div class="lbl">Dateigröße des Ergebnisses</div>
+      </div>
+      <div class="item">
+        <div class="num" id="ratioOut">–</div>
+        <div class="lbl">im Vergleich zu unkomprimiert (RGB)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage fit" id="stage">
+    <img id="preview" alt="JPG-Vorschau">
+  </div>
+
+  <div class="zoomlabel" id="zoomlabel">Ansicht: <span class="val">gesamtes Bild eingepasst</span></div>
+  <div class="status" id="status">Lade kuh.jpg …</div>
+
+  <div class="hint">
+    Standardmäßig wird das Bild vollständig eingepasst angezeigt. Mit "100&nbsp;% Zoom" wird es in Originalgröße (1 Bildpixel = 1 Anzeigepixel) dargestellt; passt es dann nicht in den Rahmen, erscheinen Scrollbars zum Navigieren. JPG-Artefakte sind vor allem im 100&nbsp;%-Zoom gut zu erkennen.<br>
+    Die Vorschau entsteht durch erneutes Kodieren des geladenen Bildes im Browser (Canvas → JPEG). Die Qualität bezieht sich daher auf diese Neukodierung; die Dateigröße kann von der eines anderen JPG-Encoders abweichen.<br>
+    Hinweis: Wird diese Datei direkt per Doppelklick (file://) geöffnet, blockieren manche Browser (v. a. Chrome) aus Sicherheitsgründen den Pixelzugriff auf lokale Bilder ("tainted canvas"). Falls die Vorschau nicht funktioniert, die Seite über einen lokalen Webserver öffnen, z. B. mit <code>python3 -m http.server</code> im selben Ordner wie kuh.jpg.
+  </div>
+</div>
+
+<script>
+(function(){
+  const img = new Image();
+
+  const stage = document.getElementById('stage');
+  const preview = document.getElementById('preview');
+  const slider = document.getElementById('quality');
+  const qualityOut = document.getElementById('qualityOut');
+  const sizeOut = document.getElementById('sizeOut');
+  const ratioOut = document.getElementById('ratioOut');
+  const status = document.getElementById('status');
+  const zoomlabel = document.getElementById('zoomlabel');
+  const zoomToggle = document.getElementById('zoomToggle');
+  zoomToggle.checked = false; // beim Laden immer eingepasste Ansicht
+  slider.value = 100;
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let width = 0, height = 0;
+  let loaded = false;
+  let requestId = 0;      // verwirft veraltete asynchrone Ergebnisse
+  let currentUrl = null;  // aktuelle Blob-URL, wird beim Wechsel freigegeben
+
+  function applyViewMode(){
+    if (zoomToggle.checked){
+      stage.classList.remove('fit');
+      zoomlabel.innerHTML = 'Ansicht: <span class="val">100&nbsp;% (1 Bildpixel = 1 Pixel)</span> – bei Bedarf im Bild scrollen';
+    } else {
+      stage.classList.add('fit');
+      zoomlabel.innerHTML = 'Ansicht: <span class="val">gesamtes Bild eingepasst</span>';
+    }
+  }
+  zoomToggle.addEventListener('change', applyViewMode);
+
+  function fmtNum(n){
+    return n.toLocaleString('de-DE');
+  }
+
+  function fmtSize(bytes){
+    if (bytes >= 1024 * 1024){
+      return (bytes / (1024 * 1024)).toLocaleString('de-DE', {maximumFractionDigits: 2}) + ' MB';
+    }
+    return (bytes / 1024).toLocaleString('de-DE', {maximumFractionDigits: 1}) + ' KB';
+  }
+
+  function updateQualityLabel(q){
+    qualityOut.textContent = q + ' %';
+  }
+
+  function render(q){
+    if (!loaded) return;
+    const myId = ++requestId;
+
+    canvas.toBlob((blob) => {
+      if (myId !== requestId) return; // inzwischen neuere Anfrage
+      if (!blob){
+        status.textContent = 'JPG-Kodierung fehlgeschlagen.';
+        status.classList.add('error');
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const old = currentUrl;
+      currentUrl = url;
+      preview.src = url;
+      if (old) URL.revokeObjectURL(old);
+
+      const raw = width * height * 3;
+      sizeOut.textContent = fmtSize(blob.size);
+      ratioOut.textContent = (blob.size / raw * 100).toLocaleString('de-DE', {maximumFractionDigits: 1}) + ' %';
+    }, 'image/jpeg', q / 100);
+  }
+
+  slider.addEventListener('input', () => {
+    const q = parseInt(slider.value, 10);
+    updateQualityLabel(q);
+    render(q);
+  });
+
+  img.onload = () => {
+    width = img.naturalWidth;
+    height = img.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    // weißer Hintergrund, falls das Quellbild Transparenz enthielte
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0);
+
+    try {
+      // Test, ob der Canvas ausgelesen werden darf (sonst "tainted")
+      ctx.getImageData(0, 0, 1, 1);
+    } catch (e) {
+      status.textContent = 'Pixelzugriff blockiert (' + e.message + '). Diese Seite muss über einen lokalen Webserver geöffnet werden (nicht per Doppelklick/file://), damit die Kodierung erlaubt ist.';
+      status.classList.add('error');
+      return;
+    }
+
+    loaded = true;
+    status.textContent = 'kuh.jpg geladen (' + width + ' × ' + height + ' px). Regler bewegen, um die JPG-Qualität zu ändern.';
+    updateQualityLabel(parseInt(slider.value, 10));
+    applyViewMode();
+    render(parseInt(slider.value, 10));
+  };
+
+  img.onerror = () => {
+    status.textContent = 'kuh.jpg konnte nicht geladen werden. Prüfen: liegt die Datei exakt als "kuh.jpg" (Groß-/Kleinschreibung beachten) im selben Ordner wie diese HTML-Datei? Falls ja, hilft oft ein Neuladen der Seite (Ctrl/Cmd+R) oder das Öffnen über einen lokalen Webserver statt per Doppelklick.';
+    status.classList.add('error');
+  };
+
+  img.src = 'kuh.jpg';
+})();
+</script>
+</body>
+</html>
