@@ -210,7 +210,7 @@ input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); height:
   <header>
     <div class="eyebrow">Zeichenkodierung</div>
     <h1>ASCII in Bits</h1>
-    <p class="lede">Tippe einen Text ein und sieh, wie jedes Zeichen als Zahl und als Folge von Nullen und Einsen gespeichert wird. Mit dem Regler nimmst du dem Code Bits weg und siehst, welche Zeichen dann nicht mehr hineinpassen.</p>
+    <p class="lede">Tippe einen Text ein und sieh, wie jedes Zeichen als Zahl und als Folge von Nullen und Einsen gespeichert wird. Mit dem Regler kannst du einstellen, wie viele Bit du pro Zeichen verwenden möchtest. Irgendwann lassen sich z.B. nicht mehr alle Satzzeichen darstellen, weil die Anzahl verschiedener Codes nicht ausreicht.</p>
   </header>
 
   <section aria-labelledby="h-in">
@@ -264,7 +264,7 @@ input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); height:
     </div>
     <div class="tablewrap"><div class="grid" id="grid"></div></div>
     <div class="missing" id="missing"></div>
-    <p class="tnote">Zeile = erste Hex-Ziffer des Codes, Spalte = zweite. Das Eurozeichen fehlt in Latin-1, es steht erst in Windows-1252.</p>
+    <p class="tnote">Zeile = erste Hex-Ziffer des Codes, Spalte = zweite. </p>
   </section>
 </div>
 
@@ -417,10 +417,10 @@ function render() {
   $('bigbits').innerHTML = n + '<small>Bit</small>';
   $('capacity').innerHTML = '2<sup>' + n + '</sup> = ' + cap + ' Zeichen · Codes 0 bis ' + (cap - 1);
   var dr = n < 8 ? droppedAt(n).map(function (d) { return d.dropped === d.len ? d.name : d.dropped + ' von ' + d.len + ' (' + d.name + ')'; }).join(', ') : '';
-  $('levelnote').textContent =
-    n >= 8 ? 'Mit 8 Bit hat jedes der 256 Zeichen von Latin-1 (ISO 8859-1) seinen festen Code, auch Umlaute, ß und viele Symbole.' :
-    n === 7 ? 'Die Erweiterung Latin-1 fliegt zuerst raus. Übrig bleibt genau ASCII mit 128 Zeichen, die Codes bleiben wie im Original (A = 65). Weggefallen: ' + dr + '.' :
-    'Gegenüber ' + (n + 1) + ' Bit fliegt raus, was am wenigsten gebraucht wird: ' + dr + '. Die übrigen Zeichen werden neu durchnummeriert, ein A hat deshalb nicht mehr den Code 65.';
+  $('levelnote').textContent = '';
+    //n >= 8 ? 'Mit 8 Bit hat jedes der 256 Zeichen von Latin-1 (ISO 8859-1) seinen festen Code, auch Umlaute, ß und viele Symbole.' :
+    //n === 7 ? '' :
+    //'';
 
   /* Statistik */
   var stats = $('stats');
