@@ -1,0 +1,536 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ASCII-Visualisierer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: eine Spalte. Eingabe oben, Bitbreite-Regler, Binärkacheln, darunter die 16x16-Codetabelle. */
+:root {
+  --bg: #edf0ee;
+  --surface: #f9fbfa;
+  --ink: #121c1b;
+  --muted: #566866;
+  --line: #cbd5d2;
+  --accent: #1c4fd8;
+  --accent-tint: #dbe5fb;
+  --err: #d3362e;
+  --err-2: #a82820;
+  --err-tint: #fbe3e1;
+  --off: #dde3e1;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --cell: 15px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1514;
+    --surface: #162120;
+    --ink: #e5edeb;
+    --muted: #94a5a2;
+    --line: #2a3a38;
+    --accent: #7fa5ff;
+    --accent-tint: #1f2f55;
+    --err: #ff6d64;
+    --err-2: #c7443c;
+    --err-tint: #3b1d1b;
+    --off: #1d2b29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1514;
+  --surface: #162120;
+  --ink: #e5edeb;
+  --muted: #94a5a2;
+  --line: #2a3a38;
+  --accent: #7fa5ff;
+  --accent-tint: #1f2f55;
+  --err: #ff6d64;
+  --err-2: #c7443c;
+  --err-tint: #3b1d1b;
+  --off: #1d2b29;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+button, textarea, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 62ch; color: var(--muted); }
+
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin: 0; letter-spacing: -.01em; }
+.label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Eingabe */
+textarea#text {
+  width: 100%; min-height: 96px; resize: vertical;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+  padding: 12px 14px; font-family: var(--font-mono); font-size: 17px; line-height: 1.5;
+}
+textarea#text:focus-visible { outline-offset: 0; border-color: var(--accent); }
+.groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 22px; }
+.group { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.group .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.ins {
+  min-width: 38px; height: 36px; padding: 0 10px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 16px; line-height: 1;
+}
+.ins.wide { font-size: 13px; }
+.ins:hover { border-color: var(--accent); background: var(--accent-tint); }
+.ins:active { transform: translateY(1px); }
+
+/* Slider */
+.sliderrow { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.bigbits { font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.bigbits small { font-size: 1rem; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.capacity { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.slider { display: flex; flex-direction: column; gap: 4px; }
+input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); height: 28px; }
+.ticks { display: flex; justify-content: space-between; padding: 0 8px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.note { margin: 0; color: var(--muted); max-width: 70ch; }
+
+/* Kacheln */
+.stats { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.pill { font-family: var(--font-mono); font-size: 13px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); }
+.pill.ok { background: var(--accent-tint); border-color: transparent; }
+.pill.bad { background: var(--err-tint); border-color: var(--err); color: var(--err); }
+.statmsg { color: var(--muted); }
+.fixbtn { height: 30px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; font-weight: 500; }
+.fixbtn:hover { background: var(--accent-tint); }
+
+.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { height: 30px; padding: 0 12px; border: 0; background: transparent; cursor: pointer; font-size: 13px; }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--bg); }
+
+.tiles { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+.tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-width: 46px; padding: 8px 6px 9px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+}
+.tile:hover { border-color: var(--muted); }
+.tile[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.tile.err { background: var(--err-tint); }
+.tile .glyph { font-family: var(--font-mono); font-size: 20px; line-height: 24px; height: 24px; font-weight: 500; }
+.tile .glyph.ctrl { font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
+.tile .num { font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bits { display: inline-flex; }
+.bits i { width: var(--cell); text-align: center; font-style: normal; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.bits i.on { color: var(--accent); font-weight: 600; }
+.bar {
+  display: block; height: 16px; border-radius: 2px;
+  width: calc(var(--n) * var(--cell));
+  background: repeating-linear-gradient(135deg, var(--err) 0 5px, var(--err-2) 5px 8px);
+}
+
+.detail { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.detail h3 { margin: 0; font-family: var(--font-display); font-size: 1rem; font-weight: 600; }
+.detail p { margin: 0; max-width: 72ch; }
+.detail .eq { font-family: var(--font-mono); font-size: 14px; overflow-wrap: anywhere; }
+.weights { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+.w { display: flex; flex-direction: column; align-items: center; min-width: 38px; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.w .wv { font-family: var(--font-mono); font-size: 11px; color: var(--muted); padding: 2px 4px; width: 100%; text-align: center; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.w .wb { font-family: var(--font-mono); font-size: 17px; padding: 3px 0; font-weight: 500; color: var(--muted); }
+.w.on { background: var(--accent-tint); border-color: var(--accent); }
+.w.on .wb { color: var(--accent); font-weight: 600; }
+
+.stringbox { display: flex; flex-direction: column; gap: 8px; }
+.stringhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.copybtn { height: 30px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font-size: 13px; }
+.copybtn:hover { border-color: var(--accent); }
+.stream {
+  font-family: var(--font-mono); font-size: 14px; line-height: 1.9; word-spacing: .35em;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px;
+  overflow-wrap: anywhere; min-height: 48px;
+}
+.stream .eb { display: inline-block; height: 12px; vertical-align: -1px; border-radius: 2px; background: var(--err); }
+
+/* Tabelle */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 2px; border: 1px solid transparent; display: inline-block; }
+.sw.on { background: var(--accent-tint); border-color: var(--accent); }
+.sw.off { background: var(--off); border-color: var(--line); }
+.sw.used { background: var(--accent-tint); border: 2px solid var(--ink); }
+.sw.usedbad { background: var(--off); border: 2px solid var(--err); }
+.tablewrap { max-width: 640px; overflow-x: auto; }
+.grid { display: grid; grid-template-columns: 1.5rem repeat(16, minmax(0, 1fr)); gap: 2px; min-width: 330px; }
+.grid .hd { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.c {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: clamp(9px, 2.6vw, 14px); border-radius: 2px; border: 1px solid transparent; user-select: none; overflow: hidden;
+}
+.c.ctl { font-size: clamp(5px, 1.5vw, 7.5px); font-weight: 600; letter-spacing: 0; }
+.c.on { background: var(--accent-tint); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.c.off { background: var(--off); color: var(--muted); opacity: .55; }
+.c.used { box-shadow: inset 0 0 0 2px var(--ink); font-weight: 600; }
+.c.usedbad { box-shadow: inset 0 0 0 2px var(--err); opacity: 1; color: var(--ink); }
+.c.seam { margin-top: 5px; }
+.hd.seam { margin-top: 5px; }
+.tnote { margin: 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg); white-space: nowrap; }
+.chip small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-left: 5px; }
+.chip.full { background: var(--accent-tint); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.chip.part { border-style: dashed; border-color: var(--accent); }
+.chip.none { color: var(--muted); text-decoration: line-through; opacity: .6; }
+.missing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.missing:empty { display: none; }
+.missing b { font-family: var(--font-mono); font-weight: 500; min-width: 26px; text-align: center; padding: 2px 6px; border-radius: 3px; background: var(--err-tint); color: var(--err); border: 1px solid var(--err); }
+.grid.big .c { font-size: 20px; }
+.grid.big .c.ctl { font-size: 11px; }
+
+@media (max-width: 520px) {
+  section { padding: 14px; }
+  .bigbits { font-size: 2rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ins, .tile, .c { transition: background-color .12s, border-color .12s; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Zeichenkodierung</div>
+    <h1>ASCII in Bits</h1>
+    <p class="lede">Tippe einen Text ein und sieh, wie jedes Zeichen als Zahl und als Folge von Nullen und Einsen gespeichert wird. Mit dem Regler nimmst du dem Code Bits weg und siehst, welche Zeichen dann nicht mehr hineinpassen.</p>
+  </header>
+
+  <section aria-labelledby="h-in">
+    <h2 id="h-in">Text</h2>
+    <textarea id="text" spellcheck="false" aria-label="Eingabetext">Hallo Wörld!</textarea>
+    <div class="groups" id="groups"></div>
+  </section>
+
+  <section aria-labelledby="h-bits">
+    <h2 id="h-bits">Bits pro Zeichen</h2>
+    <div class="sliderrow">
+      <div class="bigbits" id="bigbits" aria-hidden="true">7<small>Bit</small></div>
+      <div class="capacity" id="capacity" aria-live="polite"></div>
+    </div>
+    <div class="slider">
+      <input type="range" id="bits" min="1" max="8" step="1" value="7" aria-label="Bits pro Zeichen">
+      <div class="ticks" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+    </div>
+    <p class="note" id="levelnote"></p>
+  </section>
+
+  <section aria-labelledby="h-out">
+    <h2 id="h-out">Binärcode</h2>
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <span class="label">Zahl unter dem Zeichen</span>
+      <div class="seg" role="group" aria-label="Zahlenformat">
+        <button type="button" id="fmt-dec" aria-pressed="true">Dezimal</button>
+        <button type="button" id="fmt-hex" aria-pressed="false">Hex</button>
+      </div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+    <div class="stringbox">
+      <div class="stringhead">
+        <span class="label">Gesamter Binärcode</span>
+        <button type="button" class="copybtn" id="copy">Kopieren</button>
+      </div>
+      <div class="stream" id="stream"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tab">
+    <h2 id="h-tab">Codetabelle</h2>
+    <p class="note" id="tabinfo"></p>
+    <div class="label">Rangliste: links bleibt am längsten, rechts fliegt zuerst raus</div>
+    <div class="chips" id="chips"></div>
+    <div class="legend">
+      <span><i class="sw on"></i>steckt in der Tabelle</span>
+      <span><i class="sw used"></i>kommt im Text vor</span>
+    </div>
+    <div class="tablewrap"><div class="grid" id="grid"></div></div>
+    <div class="missing" id="missing"></div>
+    <p class="tnote">Zeile = erste Hex-Ziffer des Codes, Spalte = zweite. Das Eurozeichen fehlt in Latin-1, es steht erst in Windows-1252.</p>
+  </section>
+</div>
+
+<script>
+/*CORE*/
+var CTRL = ['NUL','SOH','STX','ETX','EOT','ENQ','ACK','BEL','BS','TAB','LF','VT','FF','CR','SO','SI','DLE','DC1','DC2','DC3','DC4','NAK','SYN','ETB','CAN','EM','SUB','ESC','FS','GS','RS','US'];
+function bitsNeeded(code) { return code.toString(2).length; }
+function glyphFor(cp) {
+  if (cp < 32) return { t: CTRL[cp], ctl: true };
+  if (cp === 32) return { t: '␣', ctl: false };
+  if (cp === 127) return { t: 'DEL', ctl: true };
+  if (cp >= 128 && cp <= 159) return { t: 'C1', ctl: true };
+  if (cp === 160) return { t: 'NBSP', ctl: true };
+  if (cp === 173) return { t: 'SHY', ctl: true };
+  return { t: String.fromCodePoint(cp), ctl: false };
+}
+function codes(s) { return s.split('').map(function (c) { return c.charCodeAt(0); }); }
+function range(a, b, skip) { var r = []; for (var i = a; i <= b; i++) if (!skip || skip.indexOf(i) < 0) r.push(i); return r; }
+/* Rangliste: oben steht, was am längsten bleibt. Die Gruppen sind so geschnitten,
+   dass bei 5, 6 und 7 Bit genau eine Gruppengrenze erreicht wird (32, 64, 128 Zeichen). */
+var TIERS = [
+  { name: 'Leerzeichen', codes: [32] },
+  { name: 'Kleinbuchstaben', codes: codes('enisratdhulcgmobwfkzpvjyxq') },
+  { name: 'Zeilenumbruch', codes: [10] },
+  { name: '. , ! ?', codes: codes('.,!?') },
+  { name: 'Ziffern', codes: codes('0123456789') },
+  { name: 'Satzzeichen', codes: codes('\'"-:;()/') },
+  { name: 'Rechen- und Sonderzeichen', codes: codes('=+*%&@#$_<>[]') },
+  { name: 'Tab', codes: [9] },
+  { name: 'Großbuchstaben', codes: codes('ABCDEFGHIJKLMNOPQRSTUVWXYZ') },
+  { name: 'Zeilenanfang (CR)', codes: [13] },
+  { name: 'seltene Symbole', codes: codes('{|}^`~\\') },
+  { name: 'Steuerzeichen', codes: range(0, 31, [9, 10, 13]).concat([127]) },
+  { name: 'Umlaute und Akzente', codes: range(192, 255, [215, 247]) },
+  { name: 'Latin-1-Symbole', codes: range(160, 191).concat([215, 247]) },
+  { name: 'Latin-1-Steuerzeichen', codes: range(128, 159) }
+];
+var RANK = [], RANKPOS = {}, TIEROF = {};
+TIERS.forEach(function (t, ti) { t.codes.forEach(function (c) { RANKPOS[c] = RANK.length; RANK.push(c); TIEROF[c] = ti; }); });
+var TCACHE = {};
+function tableFor(n) {
+  if (!TCACHE[n]) {
+    var list = RANK.slice(0, Math.pow(2, n)).sort(function (a, b) { return a - b; });
+    var idx = {}; list.forEach(function (c, i) { idx[c] = i; });
+    TCACHE[n] = { codes: list, idx: idx };
+  }
+  return TCACHE[n];
+}
+function minBitsFor(cp) { return Math.max(1, bitsNeeded(RANKPOS[cp])); }
+function droppedAt(n) {
+  var lo = Math.pow(2, n), hi = Math.pow(2, n + 1), res = [];
+  TIERS.forEach(function (t) {
+    var d = t.codes.filter(function (c) { return RANKPOS[c] >= lo && RANKPOS[c] < hi; }).length;
+    if (d) res.push({ name: t.name, dropped: d, len: t.codes.length });
+  });
+  return res;
+}
+function describe(cp, n) {
+  var g = glyphFor(cp);
+  if (cp > 255) return { cp: cp, status: 'out', glyph: g, need: null };
+  var need = minBitsFor(cp);
+  var idx = tableFor(n).idx[cp];
+  if (idx === undefined) return { cp: cp, status: 'drop', glyph: g, need: need };
+  return { cp: cp, status: 'ok', glyph: g, need: need, code: idx, bin: idx.toString(2).padStart(n, '0') };
+}
+function analyse(text, n) {
+  var items = Array.from(text).map(function (ch) { return describe(ch.codePointAt(0), n); });
+  var bad = items.filter(function (x) { return x.status !== 'ok'; }).length;
+  var out = items.some(function (x) { return x.status === 'out'; });
+  var minBits = Math.max.apply(null, [1].concat(items.filter(function (x) { return x.need; }).map(function (x) { return x.need; })));
+  return { items: items, bad: bad, hasOut: out, minBits: minBits };
+}
+/*END CORE*/
+
+var GROUPS = [
+  { name: 'Umlaute und ß', items: ['ä','ö','ü','Ä','Ö','Ü','ß'] },
+  { name: 'Symbole und Währung', items: ['€','£','¥','©','®','§','°','é','ñ'] },
+  { name: 'Leer- und Steuerzeichen', items: [
+    { c: ' ', l: '␣ Leerzeichen' }, { c: '\n', l: '↵ Zeilenumbruch' }, { c: '\t', l: '⇥ Tab' },
+    { c: '\u007f', l: 'DEL' }, '"', '@', '#', '&', '~' ] },
+  { name: 'Außerhalb von ASCII und Latin-1', items: ['你','Ж','α','😀'] }
+];
+
+var $ = function (id) { return document.getElementById(id); };
+var input = $('text'), slider = $('bits');
+var fmt = 'dec', selected = 0;
+
+function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function hex(cp) { return '0x' + cp.toString(16).toUpperCase().padStart(2, '0'); }
+function numLabel(it) {
+  if (it.status === 'out') return 'U+' + it.cp.toString(16).toUpperCase();
+  if (it.status === 'drop') return '–';
+  return fmt === 'dec' ? String(it.code) : hex(it.code);
+}
+
+/* Sonderzeichen-Buttons */
+(function buildGroups() {
+  var host = $('groups');
+  GROUPS.forEach(function (g) {
+    var d = document.createElement('div'); d.className = 'group';
+    var lab = document.createElement('span'); lab.className = 'label'; lab.textContent = g.name;
+    var row = document.createElement('div'); row.className = 'btns';
+    g.items.forEach(function (it) {
+      var c = typeof it === 'string' ? it : it.c;
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'ins' + (typeof it === 'string' ? '' : ' wide');
+      b.textContent = typeof it === 'string' ? it : it.l;
+      b.addEventListener('click', function () { insert(c); });
+      row.appendChild(b);
+    });
+    d.appendChild(lab); d.appendChild(row); host.appendChild(d);
+  });
+})();
+
+function insert(s) {
+  var a = input.selectionStart, b = input.selectionEnd;
+  input.setRangeText(s, a, b, 'end');
+  input.focus();
+  render();
+}
+
+/* Tabelle: zeigt die tatsächlich verwendete Codetabelle, Position = Code */
+function renderTable(n, used) {
+  var T = tableFor(n), size = T.codes.length, cols = Math.min(16, size), rows = size / cols;
+  var g = $('grid');
+  g.style.gridTemplateColumns = '1.5rem repeat(' + cols + ', minmax(0, 1fr))';
+  g.style.minWidth = cols === 16 ? '330px' : '0';
+  g.style.maxWidth = cols < 16 ? (24 + cols * 46) + 'px' : '';
+  g.className = 'grid' + (cols <= 8 ? ' big' : '');
+  var h = '<div class="hd"></div>';
+  for (var c = 0; c < cols; c++) h += '<div class="hd">' + c.toString(16).toUpperCase() + '</div>';
+  for (var r = 0; r < rows; r++) {
+    var seam = rows === 16 && r === 8 ? ' seam' : '';
+    h += '<div class="hd' + seam + '">' + r.toString(16).toUpperCase() + '</div>';
+    for (var k = 0; k < cols; k++) {
+      var code = r * cols + k, cp = T.codes[code], gl = glyphFor(cp);
+      h += '<div class="c on' + (gl.ctl ? ' ctl' : '') + (used[cp] ? ' used' : '') + seam + '" title="Code ' + code + ' · ' + code.toString(2).padStart(n, '0') + ' · Original ' + cp + '">' + esc(gl.t) + '</div>';
+    }
+  }
+  g.innerHTML = h;
+}
+
+function render() {
+  var n = +slider.value;
+  var A = analyse(input.value, n);
+  var items = A.items;
+  if (selected >= items.length) selected = Math.max(0, items.length - 1);
+  var cap = Math.pow(2, n);
+
+  $('bigbits').innerHTML = n + '<small>Bit</small>';
+  $('capacity').innerHTML = '2<sup>' + n + '</sup> = ' + cap + ' Zeichen · Codes 0 bis ' + (cap - 1);
+  var dr = n < 8 ? droppedAt(n).map(function (d) { return d.dropped === d.len ? d.name : d.dropped + ' von ' + d.len + ' (' + d.name + ')'; }).join(', ') : '';
+  $('levelnote').textContent =
+    n >= 8 ? 'Mit 8 Bit hat jedes der 256 Zeichen von Latin-1 (ISO 8859-1) seinen festen Code, auch Umlaute, ß und viele Symbole.' :
+    n === 7 ? 'Die Erweiterung Latin-1 fliegt zuerst raus. Übrig bleibt genau ASCII mit 128 Zeichen, die Codes bleiben wie im Original (A = 65). Weggefallen: ' + dr + '.' :
+    'Gegenüber ' + (n + 1) + ' Bit fliegt raus, was am wenigsten gebraucht wird: ' + dr + '. Die übrigen Zeichen werden neu durchnummeriert, ein A hat deshalb nicht mehr den Code 65.';
+
+  /* Statistik */
+  var stats = $('stats');
+  if (!items.length) {
+    stats.innerHTML = '<span class="statmsg">Gib oben einen Text ein.</span>';
+  } else {
+    var okc = items.length - A.bad;
+    var h = '<span class="pill ' + (A.bad ? 'bad' : 'ok') + '">' + okc + ' von ' + items.length + ' darstellbar</span>';
+    if (A.bad && A.hasOut) {
+      h += '<span class="statmsg">Mindestens ein Zeichen gibt es in ASCII und Latin-1 gar nicht. Daran ändert keine Bitbreite etwas.</span>';
+    }
+    if (A.bad && A.minBits > n) {
+      h += '<span class="statmsg">' + (A.hasOut ? 'Für die übrigen Zeichen' : 'Für den ganzen Text') + ' sind mindestens ' + A.minBits + ' Bit nötig.</span><button type="button" class="fixbtn" id="fix">Auf ' + A.minBits + ' Bit stellen</button>';
+    } else if (!A.bad) {
+      h += '<span class="statmsg">Alles passt in ' + n + ' Bit.</span>';
+    }
+    stats.innerHTML = h;
+    var fix = $('fix');
+    if (fix) fix.addEventListener('click', function () { slider.value = A.minBits; render(); });
+  }
+
+  /* Kacheln */
+  $('tiles').innerHTML = items.map(function (it, i) {
+    var inner = '<span class="glyph' + (it.glyph.ctl ? ' ctrl' : '') + '">' + esc(it.glyph.t) + '</span>' +
+      '<span class="num">' + numLabel(it) + '</span>';
+    if (it.status === 'ok') {
+      inner += '<span class="bits">' + it.bin.split('').map(function (b) { return '<i class="' + (b === '1' ? 'on' : '') + '">' + b + '</i>'; }).join('') + '</span>';
+    } else {
+      inner += '<span class="bar" style="--n:' + n + '"></span>';
+    }
+    var lbl = it.status === 'ok' ? 'Code ' + it.code + ', binär ' + it.bin
+      : it.status === 'drop' ? 'bei ' + n + ' Bit rausgeflogen, braucht mindestens ' + it.need + ' Bit' : 'kein ASCII- oder Latin-1-Zeichen';
+    return '<button type="button" class="tile ' + (it.status === 'ok' ? 'ok' : 'err') + '" data-i="' + i + '" aria-pressed="' + (i === selected) + '" aria-label="' + esc(it.glyph.t) + ': ' + lbl + '">' + inner + '</button>';
+  }).join('');
+  Array.prototype.forEach.call($('tiles').children, function (b) {
+    b.addEventListener('click', function () { selected = +b.getAttribute('data-i'); render(); });
+  });
+
+  /* Detail */
+  var d = $('detail');
+  var it = items[selected];
+  if (!it) { d.innerHTML = ''; d.hidden = true; }
+  else {
+    d.hidden = false;
+    var name = it.glyph.ctl ? it.glyph.t : '„' + esc(it.glyph.t) + '“';
+    if (it.status === 'ok') {
+      var ws = '', parts = [];
+      for (var i = n - 1; i >= 0; i--) {
+        var on = it.bin[n - 1 - i] === '1';
+        ws += '<div class="w' + (on ? ' on' : '') + '"><span class="wv">' + Math.pow(2, i) + '</span><span class="wb">' + (on ? 1 : 0) + '</span></div>';
+        if (on) parts.push(Math.pow(2, i));
+      }
+      d.innerHTML = '<h3>Zeichen ' + name + ' (Position ' + (selected + 1) + ')</h3>' +
+        '<div class="weights">' + ws + '</div>' +
+        '<p class="eq">' + it.code + ' = ' + (parts.length ? parts.join(' + ') : 'keine Bits gesetzt') + ' → ' + it.bin + '</p>' +
+        (it.code !== it.cp ? '<p>In der vollständigen Tabelle hat dieses Zeichen den Code ' + it.cp + '. Weil bei ' + n + ' Bit weniger Zeichen vorkommen, rückt es auf ' + it.code + '.</p>' : '');
+    } else if (it.status === 'drop') {
+      d.innerHTML = '<h3>Zeichen ' + name + ' (Position ' + (selected + 1) + ')</h3>' +
+        '<p>Dieses Zeichen gehört zur Gruppe „' + TIERS[TIEROF[it.cp]].name + '“ und steht auf Rang ' + (RANKPOS[it.cp] + 1) + ' von 256. Mit ' + n + ' Bit gibt es nur ' + Math.pow(2, n) + ' Plätze, deshalb ist es rausgeflogen und hier steht ein roter Balken. Ab ' + it.need + ' Bit ist es wieder dabei.</p>';
+    } else {
+      var note = it.cp === 0x20AC ? ' Das Eurozeichen (U+20AC) wurde erst in Windows-1252 und Unicode ergänzt.' : '';
+      d.innerHTML = '<h3>Zeichen ' + name + ' (Position ' + (selected + 1) + ')</h3>' +
+        '<p>Dieses Zeichen hat in ASCII und Latin-1 keinen Code. Es liegt bei Unicode-Wert U+' + it.cp.toString(16).toUpperCase() + ', also über 255. Mit 8 Bit lässt es sich nicht darstellen.' + note + '</p>';
+    }
+  }
+
+  /* Gesamtstring */
+  $('stream').innerHTML = items.length ? items.map(function (it) {
+    return it.status === 'ok' ? it.bin : '<span class="eb" style="width:' + (n * 0.6) + 'em"></span>';
+  }).join(' ') : '<span class="statmsg">Noch kein Text.</span>';
+
+  /* Tabelle */
+  var used = {};
+  items.forEach(function (it) { if (it.cp <= 255) used[it.cp] = true; });
+  var lim = Math.pow(2, n);
+  renderTable(n, used);
+  $('tabinfo').textContent = n >= 8 ? 'Latin-1: 256 Zeichen, jedes mit seinem festen Code.' :
+    n === 7 ? 'ASCII: 128 Zeichen, die Codes entsprechen dem Original.' :
+    'Die ' + lim + ' wichtigsten Zeichen, neu durchnummeriert von 0 bis ' + (lim - 1) + '.';
+  $('h-tab').textContent = 'Codetabelle bei ' + n + ' Bit';
+  $('chips').innerHTML = TIERS.map(function (t) {
+    var k = t.codes.filter(function (c) { return RANKPOS[c] < lim; }).length;
+    var st = k === t.codes.length ? 'full' : k ? 'part' : 'none';
+    return '<span class="chip ' + st + '">' + esc(t.name) + (st === 'part' ? '<small>' + k + '/' + t.codes.length + '</small>' : '') + '</span>';
+  }).join('');
+  var seenMiss = {}, miss = '';
+  items.forEach(function (it) {
+    if (it.status !== 'ok' && !seenMiss[it.cp]) { seenMiss[it.cp] = 1; miss += '<b>' + esc(it.glyph.t) + '</b>'; }
+  });
+  $('missing').innerHTML = miss ? '<span>Im Text, aber nicht in der Tabelle:</span>' + miss : '';
+  $('bits').setAttribute('aria-valuetext', n + ' Bit, ' + lim + ' Zeichen');
+}
+
+input.addEventListener('input', render);
+slider.addEventListener('input', render);
+$('fmt-dec').addEventListener('click', function () { fmt = 'dec'; $('fmt-dec').setAttribute('aria-pressed', 'true'); $('fmt-hex').setAttribute('aria-pressed', 'false'); render(); });
+$('fmt-hex').addEventListener('click', function () { fmt = 'hex'; $('fmt-hex').setAttribute('aria-pressed', 'true'); $('fmt-dec').setAttribute('aria-pressed', 'false'); render(); });
+$('copy').addEventListener('click', function () {
+  var A = analyse(input.value, +slider.value);
+  var txt = A.items.map(function (it) { return it.status === 'ok' ? it.bin : '✗'; }).join(' ');
+  var btn = $('copy');
+  function done(ok) { btn.textContent = ok ? 'Kopiert' : 'Markiert, bitte mit Strg+C kopieren'; setTimeout(function () { btn.textContent = 'Kopieren'; }, 1800); }
+  function fallback() {
+    var r = document.createRange(); r.selectNodeContents($('stream'));
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
+  }
+  try { navigator.clipboard.writeText(txt).then(function () { done(true); }, fallback); } catch (e) { fallback(); }
+});
+
+render();
+</script>
+
+</body></html>
