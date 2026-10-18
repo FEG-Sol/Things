@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>JPG-Qualität – kuh.jpg</title>
+<title>JPG-Qualität – strand.jpg</title>
 <style>
   :root{
     --bg:#1b1d1f;
@@ -130,7 +130,7 @@
 <body>
 <div class="wrap">
   <h1>JPG-Qualität</h1>
-  <p class="sub">kuh.jpg – Schieberegler steuert die JPG-Qualität, das Bild wird live neu komprimiert</p>
+  <p class="sub">strand.jpg – Schieberegler steuert die JPG-Qualität, das Bild wird live neu komprimiert</p>
 
   <div class="controls">
     <label for="quality">JPG-Qualität</label>
@@ -164,7 +164,7 @@
   </div>
 
   <div class="zoomlabel" id="zoomlabel">Ansicht: <span class="val">gesamtes Bild eingepasst</span></div>
-  <div class="status" id="status">Lade kuh.jpg …</div>
+  <div class="status" id="status">Lade strand.jpg …</div>
 
   <div class="hint">
     Standardmäßig wird das Bild vollständig eingepasst angezeigt. Über "Ansicht" lässt es sich in 100&nbsp;%, 200&nbsp;%, 400&nbsp;% oder 800&nbsp;% darstellen.<br>
@@ -282,18 +282,18 @@
     }
 
     loaded = true;
-    status.textContent = 'kuh.jpg geladen (' + width + ' × ' + height + ' px). Regler bewegen, um die JPG-Qualität zu ändern.';
+    status.textContent = 'strand.jpg geladen (' + width + ' × ' + height + ' px). Regler bewegen, um die JPG-Qualität zu ändern.';
     updateQualityLabel(parseInt(slider.value, 10));
     applyViewMode();
     render(parseInt(slider.value, 10));
   };
 
   img.onerror = () => {
-    status.textContent = 'kuh.jpg konnte nicht geladen werden. Prüfen: liegt die Datei exakt als "kuh.jpg" (Groß-/Kleinschreibung beachten) im selben Ordner wie diese HTML-Datei? Falls ja, hilft oft ein Neuladen der Seite (Ctrl/Cmd+R) oder das Öffnen über einen lokalen Webserver statt per Doppelklick.';
+    status.textContent = 'strand.jpg konnte nicht geladen werden. Prüfen: liegt die Datei exakt als "strand.jpg" (Groß-/Kleinschreibung beachten) im selben Ordner wie diese HTML-Datei? Falls ja, hilft oft ein Neuladen der Seite (Ctrl/Cmd+R) oder das Öffnen über einen lokalen Webserver statt per Doppelklick.';
     status.classList.add('error');
   };
 
-  img.src = 'kuh.jpg';
+  img.src = 'strand.jpg';
 })();
 </script>
 </body>
