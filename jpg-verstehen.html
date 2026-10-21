@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JPG verstehen</title>
+<style>
+  :root{
+    --bg:#1b1d1f;
+    --panel:#242628;
+    --ink:#e8e6e1;
+    --muted:#9a9d9f;
+    --accent:#5fb3a3;
+    --warm:#e0a458;
+    --border:#35383a;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); }
+  .wrap{ max-width:1500px; margin:0 auto; padding:24px 20px 60px; box-sizing:border-box; }
+  h1{ font-size:20px; font-weight:600; margin:0 0 4px; }
+  h2{ font-size:16px; font-weight:600; margin:0 0 8px; }
+  p.sub{ color:var(--muted); margin:0 0 20px; font-size:14px; }
+  p{ line-height:1.5; font-size:14px; margin:0 0 10px; }
+  .muted{ color:var(--muted); }
+  b{ color:#fff; font-weight:600; }
+
+  .cols{ display:grid; grid-template-columns:minmax(340px,5fr) minmax(420px,6fr); gap:20px; align-items:start; }
+  .left{ position:sticky; top:12px; }
+  @media (max-width:980px){
+    .cols{ grid-template-columns:1fr; }
+    .left{ position:static; }
+  }
+
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px 18px; margin-bottom:16px; }
+  .row{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .row + .row, .row + .readout, .readout + .row{ margin-top:14px; }
+  label{ font-size:14px; color:var(--muted); white-space:nowrap; }
+  input[type=range]{ flex:1; min-width:180px; accent-color:var(--accent); }
+  select{ background:var(--bg); color:var(--ink); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-size:14px; }
+  .chk{ display:flex; align-items:center; gap:6px; }
+  .chk input, .radios input{ accent-color:var(--accent); }
+  .radios{ display:flex; gap:14px; flex-wrap:wrap; }
+  .radios label{ display:flex; align-items:center; gap:5px; }
+
+  .readout{ display:flex; gap:24px; flex-wrap:wrap; margin-top:14px; }
+  .readout .item{ min-width:110px; }
+  .readout .item .num{ font-size:18px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .readout .item .lbl{ font-size:12px; color:var(--muted); }
+
+  .stage{
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:auto;
+    display:flex;
+    height:52vh;
+    min-height:260px;
+    background:
+      linear-gradient(45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2c2e 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2c2e 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2c2e 75%);
+    background-size:20px 20px;
+    background-position:0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color:#1f2123;
+  }
+  .frame{ position:relative; margin:auto; flex:0 0 auto; }
+  #preview{ display:block; }
+  #overlay{ position:absolute; left:0; top:0; cursor:crosshair; }
+  .zoomlabel, .legend{ font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  .zoomlabel .val{ color:var(--ink); font-weight:600; }
+  .swatch{ display:inline-block; width:10px; height:10px; border:2px solid var(--warm); vertical-align:-1px; margin-right:3px; }
+  .swatch.dash{ border:2px dashed #fff; }
+  .status{ margin-top:10px; font-size:13px; color:var(--muted); }
+  .status.error{ color:#e08a7a; }
+
+  .pipeline{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:12px; color:var(--muted); }
+  .pipeline span.step{ border:1px solid var(--border); border-radius:12px; padding:3px 10px; }
+  .pipeline span.step.on{ border-color:var(--accent); color:var(--ink); }
+
+  .cgrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:12px 0 6px; }
+  figure{ margin:0; }
+  figure canvas{ display:block; max-width:100%; border:1px solid var(--border); border-radius:4px; }
+  figcaption{ font-size:12px; color:var(--muted); margin-top:5px; line-height:1.4; }
+  .calc{ font-size:13px; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-top:6px; }
+
+  .patwrap{ display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start; margin-top:10px; }
+  .patgrid{ display:grid; grid-template-columns:repeat(8,48px); gap:4px; }
+  .cell{ width:48px; text-align:center; }
+  .cell canvas{ width:48px; height:48px; display:block; image-rendering:pixelated; box-sizing:border-box; border:2px solid transparent; border-radius:3px; }
+  .cell .clbl{ font-size:11px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums; height:14px; }
+  .cell.on .clbl{ color:#fff; font-weight:600; }
+  .cmp{ display:flex; gap:14px; }
+  .cmp canvas{ width:104px; height:104px; image-rendering:pixelated; display:block; border:1px solid var(--border); border-radius:4px; }
+  .small{ font-size:12px; color:var(--muted); line-height:1.5; margin-top:8px; }
+
+  .hint{ margin-top:10px; font-size:12px; color:var(--muted); line-height:1.5; border-top:1px solid var(--border); padding-top:14px; }
+  code{ background:var(--bg); padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>JPG verstehen</h1>
+  <p class="sub">Links: das Bild mit einstellbarer JPG-Qualität · Rechts: was der Algorithmus dabei macht</p>
+
+  <div class="cols">
+
+    <!-- ===================== LINKS ===================== -->
+    <div class="left">
+      <div class="card">
+        <div class="row">
+          <label for="quality">JPG-Qualität</label>
+          <input type="range" id="quality" min="1" max="100" step="1" value="50">
+        </div>
+        <div class="readout">
+          <div class="item"><div class="num" id="qualityOut">50</div><div class="lbl">Qualitätswert (1–100)</div></div>
+          <div class="item"><div class="num" id="sizeOut">–</div><div class="lbl">Dateigröße</div></div>
+          <div class="item"><div class="num" id="subOut">–</div><div class="lbl">Farbauflösung</div></div>
+        </div>
+        <div class="row">
+          <label for="zoomSelect">Ansicht</label>
+          <select id="zoomSelect">
+            <option value="fit" selected>Eingepasst</option>
+            <option value="100">100&nbsp;%</option>
+            <option value="200">200&nbsp;%</option>
+            <option value="400">400&nbsp;%</option>
+            <option value="800">800&nbsp;%</option>
+          </select>
+          <label class="chk"><input type="checkbox" id="gridCheck" checked> 8×8-Raster</label>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="frame" id="frame">
+          <img id="preview" alt="JPG-Vorschau">
+          <canvas id="overlay"></canvas>
+        </div>
+      </div>
+      <div class="zoomlabel" id="zoomlabel"></div>
+      <div class="legend">
+        <b>Ins Bild klicken</b> (oder mit gedrückter Maustaste ziehen), um einen 8×8-Block zu wählen.
+        <span class="swatch"></span>gewählter 8×8-Block ·
+        <span class="swatch dash"></span>Bereich, den ein Farb-Block abdeckt
+      </div>
+      <div class="status" id="status">Lade Bild …</div>
+    </div>
+
+    <!-- ===================== RECHTS ===================== -->
+    <div class="right">
+
+      <div class="card">
+        <div class="pipeline">
+          <span class="step">RGB → Helligkeit&nbsp;Y + Farbe&nbsp;Cb,&nbsp;Cr</span>›
+          <span class="step on">① Farbauflösung verringern</span>›
+          <span class="step on">② 8×8-Blöcke in Muster zerlegen und runden</span>›
+          <span class="step">③ Verlustfrei packen (Huffman)</span>
+        </div>
+      </div>
+
+      <!-- ---------- Schritt 1 ---------- -->
+      <div class="card">
+        <h2>① Farbauflösung verringern (Chroma-Subsampling)</h2>
+        <p>Das Auge erkennt feine Helligkeitsunterschiede sehr gut, feine Farbunterschiede aber kaum.
+           Deshalb zerlegt JPG jedes Pixel in <b>Helligkeit (Y)</b> und <b>Farbe (Cb, Cr)</b>
+           und speichert die Farbe oft gröber als die Helligkeit.</p>
+        <p id="chromaText"></p>
+
+        <div class="cgrid">
+          <figure><canvas id="cvOrig"></canvas><figcaption id="capOrig"></figcaption></figure>
+          <figure><canvas id="cvY"></canvas><figcaption id="capY"></figcaption></figure>
+          <figure><canvas id="cvC"></canvas><figcaption id="capC"></figcaption></figure>
+          <figure><canvas id="cvMix"></canvas><figcaption id="capMix"></figcaption></figure>
+        </div>
+        <div class="calc" id="chromaCalc"></div>
+      </div>
+
+      <!-- ---------- Schritt 2 ---------- -->
+      <div class="card">
+        <h2>② Muster in den 8×8-Blöcken</h2>
+        <p>Jeder 8×8-Block wird als <b>Mischung aus 64 festen Mustern</b> beschrieben. Zu jedem Muster gehört eine Zahl:
+           wie stark es mitmischt. Danach wird jede Zahl durch einen Wert aus der <b>Quantisierungstabelle</b> geteilt und
+           auf eine ganze Zahl gerundet. Je niedriger die Qualität, desto größer die Teiler – feine Muster werden zu
+           <b>0</b> und müssen gar nicht mehr gespeichert werden.</p>
+
+        <div class="row">
+          <label for="chSelect">Kanal</label>
+          <select id="chSelect">
+            <option value="Y" selected>Helligkeit (Y)</option>
+            <option value="Cb">Farbe Cb (Gelb–Blau)</option>
+            <option value="Cr">Farbe Cr (Türkis–Rot)</option>
+          </select>
+        </div>
+        <div class="row radios" style="margin-top:10px">
+          <label><input type="radio" name="pmode" value="block" checked> Gewählter Block</label>
+          <label><input type="radio" name="pmode" value="image"> Ganzes Bild</label>
+          <label><input type="radio" name="pmode" value="table"> Teiler (Tabelle)</label>
+        </div>
+
+        <div class="patwrap">
+          <div>
+            <div class="patgrid" id="patGrid"></div>
+            <div class="small">Links oben: gleichmäßige Fläche (Mittelwert). Nach rechts: immer feinere senkrechte Streifen.
+              Nach unten: immer feinere waagrechte Streifen. Rechts unten: feines Schachbrett.</div>
+          </div>
+          <div>
+            <div class="cmp">
+              <figure><canvas id="cvBlkOrig" width="8" height="8"></canvas><figcaption>Original-Block</figcaption></figure>
+              <figure><canvas id="cvBlkRec" width="8" height="8"></canvas><figcaption>Nach JPG<br>(aus den übrigen Mustern)</figcaption></figure>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc" id="patSummary" style="margin-top:12px"></div>
+        <div class="small" id="patLegend"></div>
+      </div>
+
+      <div class="hint">
+        Die Vorschau links ist die Ausgabe des JPG-Encoders deines Browsers. Rechts wird mit den <b>tatsächlich in dieser JPG-Datei stehenden</b>
+        Quantisierungstabellen und der dort angegebenen Farbauflösung nachgerechnet; Kleinigkeiten (z. B. Rundung) können vom Encoder abweichen.<br>
+        Hinweis: Wird die Seite per Doppelklick (file://) geöffnet, blockieren manche Browser den Pixelzugriff auf lokale Bilder. Dann die Seite über
+        einen lokalen Webserver öffnen, z. B. mit <code>python3 -m http.server</code> im selben Ordner wie das Bild.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// >>> Name der (kleinen) Bilddatei, die im selben Ordner wie diese Seite liegt <<<
+const IMAGE_FILE = 'kuh_klein.jpg';
+
+/*CORE*/
+const ZZ=[0,1,8,16,9,2,3,10,17,24,32,25,18,11,4,5,12,19,26,33,40,48,41,34,27,20,13,6,7,14,21,28,35,42,49,56,57,50,43,36,29,22,15,23,30,37,44,51,58,59,52,45,38,31,39,46,53,60,61,54,47,55,62,63];
+const STD_Y=[16,11,10,16,24,40,51,61, 12,12,14,19,26,58,60,55, 14,13,16,24,40,57,69,56, 14,17,22,29,51,87,80,62,
+             18,22,37,56,68,109,103,77, 24,35,55,64,81,104,113,92, 49,64,78,87,103,121,120,101, 72,92,95,98,112,100,103,99];
+const STD_C=[17,18,24,47,99,99,99,99, 18,21,26,66,99,99,99,99, 24,26,56,99,99,99,99,99, 47,66,99,99,99,99,99,99]
+             .concat(new Array(32).fill(99));
+
+const clamp8 = v => v<0 ? 0 : v>255 ? 255 : Math.round(v);
+
+// Liest Quantisierungstabellen und Farb-Subsampling direkt aus den JPEG-Bytes.
+function parseJpeg(b){
+  if(!b || b[0]!==0xFF || b[1]!==0xD8) return null;
+  let i=2; const qt={}; let sof=null;
+  while(i+4<=b.length){
+    if(b[i]!==0xFF){ i++; continue; }
+    const m=b[i+1];
+    if(m===0xFF){ i++; continue; }
+    if(m===0xD8 || m===0x01 || (m>=0xD0 && m<=0xD7)){ i+=2; continue; }
+    if(m===0xDA || m===0xD9) break;
+    const len=(b[i+2]<<8)|b[i+3];
+    const s=i+4, e=i+2+len;
+    if(m===0xDB){
+      let p=s;
+      while(p<e){
+        const pq=b[p]>>4, tq=b[p]&15; p++;
+        const t=new Array(64);
+        for(let k=0;k<64;k++){
+          let v;
+          if(pq){ v=(b[p]<<8)|b[p+1]; p+=2; } else { v=b[p++]; }
+          t[ZZ[k]]=v;                      // Datei: Zickzack-Reihenfolge -> zeilenweise
+        }
+        qt[tq]=t;
+      }
+    } else if(m>=0xC0 && m<=0xC2){
+      const n=b[s+5]; const comps=[];
+      for(let c=0;c<n;c++){
+        const o=s+6+c*3;
+        comps.push({id:b[o], h:b[o+1]>>4, v:b[o+1]&15, tq:b[o+2]});
+      }
+      sof={n,comps};
+    }
+    i=e;
+  }
+  if(!sof || sof.n<3) return null;
+  const y=sof.comps[0], cb=sof.comps[1], cr=sof.comps[2];
+  const sx=y.h/cb.h, sy=y.v/cb.v;
+  const qY=qt[y.tq], qC=qt[cb.tq];
+  if(!qY || !qC || !Number.isInteger(sx) || !Number.isInteger(sy) || cb.h!==cr.h || cb.v!==cr.v) return null;
+  return {sx, sy, qY, qC, source:'file'};
+}
+
+// Ersatz, falls die Datei nicht lesbar ist: Standardformel von libjpeg
+function fallbackParams(q){
+  const S = q<50 ? 5000/q : 200-2*q;
+  const sc = t => t.map(v => Math.min(255, Math.max(1, Math.floor((v*S+50)/100))));
+  const sub = q>=90 ? 1 : 2;
+  return {sx:sub, sy:sub, qY:sc(STD_Y), qC:sc(STD_C), source:'model'};
+}
+
+function ycc2rgb(Y,Cb,Cr){
+  return [ clamp8(Y+1.402*(Cr-128)),
+           clamp8(Y-0.344136*(Cb-128)-0.714136*(Cr-128)),
+           clamp8(Y+1.772*(Cb-128)) ];
+}
+
+// RGB -> Y/Cb/Cr, aufgefüllt (Randpixel wiederholt) auf Vielfache von 16
+function buildPlanes(rgba,W,H){
+  const PW=Math.ceil(W/16)*16, PH=Math.ceil(H/16)*16;
+  const Y=new Float32Array(PW*PH), Cb=new Float32Array(PW*PH), Cr=new Float32Array(PW*PH);
+  const rgb=new Uint8ClampedArray(PW*PH*3);
+  for(let y=0;y<PH;y++){
+    const yy=Math.min(y,H-1);
+    for(let x=0;x<PW;x++){
+      const xx=Math.min(x,W-1);
+      const i=(yy*W+xx)*4, o=y*PW+x;
+      const r=rgba[i], g=rgba[i+1], b=rgba[i+2];
+      Y[o]  = 0.299*r+0.587*g+0.114*b;
+      Cb[o] = 128-0.168736*r-0.331264*g+0.5*b;
+      Cr[o] = 128+0.5*r-0.418688*g-0.081312*b;
+      rgb[o*3]=r; rgb[o*3+1]=g; rgb[o*3+2]=b;
+    }
+  }
+  return {PW,PH,Y,Cb,Cr,rgb};
+}
+
+// Mittelwert über fx×fy Pixel (Farbauflösung verringern)
+function subsample(data,PW,PH,fx,fy){
+  if(fx===1 && fy===1) return {data,w:PW,h:PH};
+  const w=PW/fx, h=PH/fy, out=new Float32Array(w*h);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    let s=0;
+    for(let dy=0;dy<fy;dy++) for(let dx=0;dx<fx;dx++) s+=data[(y*fy+dy)*PW+x*fx+dx];
+    out[y*w+x]=s/(fx*fy);
+  }
+  return {data:out,w,h};
+}
+
+// 8×8-DCT (orthonormal, wie in JPEG)
+const T=new Float64Array(64);
+for(let u=0;u<8;u++) for(let x=0;x<8;x++) T[u*8+x]=(u===0?Math.SQRT1_2:1)*0.5*Math.cos((2*x+1)*u*Math.PI/16);
+
+function fdct(blk,out){
+  const tmp=new Float64Array(64);
+  for(let v=0;v<8;v++) for(let x=0;x<8;x++){ let s=0; for(let y=0;y<8;y++) s+=T[v*8+y]*blk[y*8+x]; tmp[v*8+x]=s; }
+  for(let v=0;v<8;v++) for(let u=0;u<8;u++){ let s=0; for(let x=0;x<8;x++) s+=tmp[v*8+x]*T[u*8+x]; out[v*8+u]=s; }
+}
+function idct(F,out){
+  const tmp=new Float64Array(64);
+  for(let y=0;y<8;y++) for(let u=0;u<8;u++){ let s=0; for(let v=0;v<8;v++) s+=T[v*8+y]*F[v*8+u]; tmp[y*8+u]=s; }
+  for(let y=0;y<8;y++) for(let x=0;x<8;x++){ let s=0; for(let u=0;u<8;u++) s+=tmp[y*8+u]*T[u*8+x]; out[y*8+x]=s; }
+}
+
+// Alle Blöcke eines Kanals: DCT, durch Tabelle teilen, runden
+function analyzeChannel(pl,Q){
+  const bw=pl.w/8, bh=pl.h/8, nb=bw*bh;
+  const coefs=new Int16Array(nb*64), counts=new Uint32Array(64);
+  const blk=new Float64Array(64), F=new Float64Array(64);
+  for(let by=0;by<bh;by++) for(let bx=0;bx<bw;bx++){
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++) blk[y*8+x]=pl.data[(by*8+y)*pl.w+bx*8+x]-128;
+    fdct(blk,F);
+    const o=(by*bw+bx)*64;
+    for(let k=0;k<64;k++){
+      const q=Math.round(F[k]/Q[k]);
+      coefs[o+k]=q;
+      if(q!==0) counts[k]++;
+    }
+  }
+  return {bw,bh,nb,coefs,counts};
+}
+/*ENDCORE*/
+
+// ------------------------------------------------------------------ DOM
+const $=id=>document.getElementById(id);
+const stage=$('stage'), frame=$('frame'), preview=$('preview'), overlay=$('overlay');
+const slider=$('quality'), qualityOut=$('qualityOut'), sizeOut=$('sizeOut'), subOut=$('subOut');
+const zoomSel=$('zoomSelect'), gridCheck=$('gridCheck'), zoomlabel=$('zoomlabel'), status=$('status');
+const chSel=$('chSelect'), patGrid=$('patGrid');
+const modeRadios=document.querySelectorAll('input[name=pmode]');
+
+zoomSel.value='fit';
+gridCheck.checked=true;
+slider.value=50;
+chSel.value='Y';
+modeRadios.forEach(r=>{ r.checked = r.value==='block'; });
+
+const fmtNum=n=>n.toLocaleString('de-DE');
+const fmt1=n=>n.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+function fmtSize(bytes){
+  if(bytes>=1024*1024) return (bytes/1048576).toLocaleString('de-DE',{maximumFractionDigits:2})+' MB';
+  return (bytes/1024).toLocaleString('de-DE',{maximumFractionDigits:1})+' KB';
+}
+
+let W=0,H=0,planes=null,srcCanvas=null,ready=false;
+let cur=null;                  // Ergebnis der letzten Berechnung
+let sel={bx:0,by:0};           // gewählter 8×8-Block (Helligkeit)
+let zoomScale=1,reqId=0,currentUrl=null;
+
+// ------------------------------------------------------------------ Muster-Raster
+const cells=[];
+(function buildPatternGrid(){
+  for(let k=0;k<64;k++){
+    const v=Math.floor(k/8), u=k%8;
+    const d=document.createElement('div'); d.className='cell';
+    d.title = k===0 ? 'Mittelwert (gleichmäßige Fläche)' : 'Muster '+(u+1)+' (waagrecht) / '+(v+1)+' (senkrecht)';
+    const c=document.createElement('canvas'); c.width=8; c.height=8;
+    const cx=c.getContext('2d'), id=cx.createImageData(8,8);
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++){
+      const val = k===0 ? 0.2 : Math.cos((2*x+1)*u*Math.PI/16)*Math.cos((2*y+1)*v*Math.PI/16);
+      const g=Math.round(128+127*val), o=(y*8+x)*4;
+      id.data[o]=id.data[o+1]=id.data[o+2]=g; id.data[o+3]=255;
+    }
+    cx.putImageData(id,0,0);
+    const l=document.createElement('div'); l.className='clbl';
+    d.append(c,l); patGrid.appendChild(d);
+    cells.push({d,c,l});
+  }
+})();
+
+// ------------------------------------------------------------------ Ansicht links
+function layoutImage(){
+  if(!W) return;
+  const fit = zoomSel.value==='fit';
+  let s;
+  if(fit){
+    s=Math.min(stage.clientWidth/W, stage.clientHeight/H);
+    if(s>=1) s=Math.floor(s);
+  } else s=parseInt(zoomSel.value,10)/100;
+  zoomScale=s;
+  const w=fit?Math.max(1,Math.floor(W*s)):Math.round(W*s);
+  const h=fit?Math.max(1,Math.floor(H*s)):Math.round(H*s);
+  frame.style.width=w+'px'; frame.style.height=h+'px';
+  preview.style.width=w+'px'; preview.style.height=h+'px';
+  preview.style.imageRendering = s>1 ? 'pixelated' : 'auto';
+  zoomlabel.innerHTML = 'Ansicht: <span class="val">'+(fit?'eingepasst ('+Math.round(s*100)+'&nbsp;%)':zoomSel.value+'&nbsp;%')+
+    '</span> · Bild: '+W+' × '+H+' Pixel'+(fit?'':' – bei Bedarf im Bild scrollen');
+  drawOverlay();
+}
+
+function drawOverlay(){
+  if(!W) return;
+  const s=zoomScale;
+  const w=parseInt(frame.style.width,10), h=parseInt(frame.style.height,10);
+  overlay.width=w; overlay.height=h;
+  const g=overlay.getContext('2d');
+  g.clearRect(0,0,w,h);
+  const px=v=>Math.round(v)+0.5;
+
+  if(gridCheck.checked){
+    g.strokeStyle='rgba(255,255,255,0.28)'; g.lineWidth=1;
+    g.beginPath();
+    for(let x=8;x<W;x+=8){ g.moveTo(px(x*s),0); g.lineTo(px(x*s),h); }
+    for(let y=8;y<H;y+=8){ g.moveTo(0,px(y*s)); g.lineTo(w,px(y*s)); }
+    g.stroke();
+  }
+  if(!cur) return;
+  const {sx,sy}=cur.params;
+  // Bereich, den ein Farb-Block abdeckt
+  const pw=8*sx, ph=8*sy, px0=Math.floor(sel.bx/sx)*pw, py0=Math.floor(sel.by/sy)*ph;
+  g.setLineDash([6,4]); g.strokeStyle='#fff'; g.lineWidth=2;
+  g.strokeRect(px0*s+1,py0*s+1,pw*s-2,ph*s-2);
+  g.setLineDash([]);
+  // gewählter 8×8-Block
+  g.strokeStyle='#e0a458'; g.lineWidth=2;
+  g.strokeRect(sel.bx*8*s+1,sel.by*8*s+1,8*s-2,8*s-2);
+}
+
+function pick(e){
+  if(!ready) return;
+  const r=overlay.getBoundingClientRect();
+  const x=(e.clientX-r.left)/zoomScale, y=(e.clientY-r.top)/zoomScale;
+  const nbx=Math.ceil(W/8), nby=Math.ceil(H/8);
+  const bx=Math.min(nbx-1,Math.max(0,Math.floor(x/8)));
+  const by=Math.min(nby-1,Math.max(0,Math.floor(y/8)));
+  if(bx!==sel.bx || by!==sel.by){ sel={bx,by}; renderSelection(); }
+}
+overlay.addEventListener('pointerdown',pick);
+overlay.addEventListener('pointermove',e=>{ if(e.buttons&1) pick(e); });
+
+// ------------------------------------------------------------------ Schritt 1: Farbauflösung
+function drawChroma(){
+  const {sx,sy}=cur.params;
+  const pw=8*sx, ph=8*sy;
+  const cell=Math.floor(240/Math.max(pw,ph));
+  const px0=Math.floor(sel.bx/sx)*pw, py0=Math.floor(sel.by/sy)*ph;
+  const PW=planes.PW, cbS=cur.sub.Cb, crS=cur.sub.Cr;
+  const chromaAt=(x,y)=>{
+    const gx=Math.floor((px0+x)/sx), gy=Math.floor((py0+y)/sy);
+    return [cbS.data[gy*cbS.w+gx], crS.data[gy*crS.w+gx]];
+  };
+  const yAt=(x,y)=>planes.Y[(py0+y)*PW+px0+x];
+  const painters={
+    cvOrig:(x,y)=>{ const i=((py0+y)*PW+px0+x)*3; return [planes.rgb[i],planes.rgb[i+1],planes.rgb[i+2]]; },
+    cvY:(x,y)=>{ const g=clamp8(yAt(x,y)); return [g,g,g]; },
+    cvC:(x,y)=>{ const [cb,cr]=chromaAt(x,y); return ycc2rgb(128,cb,cr); },
+    cvMix:(x,y)=>{ const [cb,cr]=chromaAt(x,y); return ycc2rgb(yAt(x,y),cb,cr); }
+  };
+  const grouped = sx>1 || sy>1;
+  for(const id in painters){
+    const cv=$(id); cv.width=pw*cell; cv.height=ph*cell;
+    const g=cv.getContext('2d');
+    for(let y=0;y<ph;y++) for(let x=0;x<pw;x++){
+      const c=painters[id](x,y);
+      g.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';
+      g.fillRect(x*cell,y*cell,cell,cell);
+    }
+    // Pixelraster
+    g.strokeStyle='rgba(0,0,0,0.25)'; g.lineWidth=1; g.beginPath();
+    for(let x=0;x<=pw;x++){ g.moveTo(x*cell+0.5,0); g.lineTo(x*cell+0.5,ph*cell); }
+    for(let y=0;y<=ph;y++){ g.moveTo(0,y*cell+0.5); g.lineTo(pw*cell,y*cell+0.5); }
+    g.stroke();
+    // Gruppen-Rahmen
+    if(grouped){
+      for(const [col,lw] of [['#000',3],['#fff',1]]){
+        g.strokeStyle=col; g.lineWidth=lw; g.beginPath();
+        for(let x=0;x<=pw;x+=sx){ g.moveTo(x*cell,0); g.lineTo(x*cell,ph*cell); }
+        for(let y=0;y<=ph;y+=sy){ g.moveTo(0,y*cell); g.lineTo(pw*cell,y*cell); }
+        g.stroke();
+      }
+    }
+    // Farb-Messpunkte
+    if(id==='cvC'){
+      for(let gy=0;gy<ph/sy;gy++) for(let gx=0;gx<pw/sx;gx++){
+        g.beginPath();
+        g.arc((gx*sx+sx/2)*cell,(gy*sy+sy/2)*cell,Math.max(3,cell*0.2),0,Math.PI*2);
+        g.fillStyle='#fff'; g.fill(); g.lineWidth=2; g.strokeStyle='#000'; g.stroke();
+      }
+    }
+  }
+  const n=sx*sy;
+  $('capOrig').textContent='Original-Ausschnitt ('+pw+'×'+ph+' Pixel): jedes Pixel hat Helligkeit und Farbe';
+  $('capY').textContent='Nur Helligkeit (Y): bleibt für jedes Pixel einzeln erhalten';
+  $('capC').textContent= n>1 ? 'Nur Farbe (Cb/Cr): ein Messpunkt (●) pro Gruppe – alle '+n+' Pixel der Gruppe bekommen dieselbe Farbe'
+                             : 'Nur Farbe (Cb/Cr): ein Messpunkt (●) pro Pixel – volle Farbauflösung';
+  $('capMix').textContent='Zusammengesetzt: so sieht das Bild nach dem Verkleinern der Farbe aus';
+
+  const mode = sx+':'+sy;
+  const label = n===1 ? '4:4:4' : (sx===2&&sy===1) ? '4:2:2' : (sx===2&&sy===2) ? '4:2:0' : (sx===1&&sy===2) ? '4:4:0' : sx+'×'+sy;
+  const vals = 1+2/n;
+  let txt;
+  if(n===1) txt='Bei diesem Qualitätswert speichert der Encoder die Farbe für <b>jedes Pixel einzeln</b> ('+label+'). Es geht keine Farbauflösung verloren.';
+  else txt='Bei diesem Qualitätswert speichert der Encoder die Farbe nur noch für <b>Gruppen aus '+sx+'×'+sy+' Pixeln</b> ('+label+'): '+n+' Pixel teilen sich einen Farbwert. Die Helligkeit bleibt für jedes Pixel einzeln erhalten.';
+  $('chromaText').innerHTML=txt;
+  $('chromaCalc').innerHTML='Gespeicherte Werte pro Pixel: Voll wären <b>3</b> (Y, Cb, Cr). Jetzt: 1 (Y) + 2 ÷ '+n+' (Cb, Cr) = <b>'+fmt1(vals).replace(/,0$/,'')+
+    '</b> → nur noch <b>'+Math.round(vals/3*100)+' %</b> der Rohdaten, noch bevor Schritt ② beginnt.';
+}
+
+// ------------------------------------------------------------------ Schritt 2: Muster
+function drawBlock(cv,vals,chn){
+  const g=cv.getContext('2d'), id=g.createImageData(8,8);
+  for(let i=0;i<64;i++){
+    let c;
+    if(chn==='Y'){ const v=clamp8(vals[i]); c=[v,v,v]; }
+    else if(chn==='Cb') c=ycc2rgb(128,vals[i],128);
+    else c=ycc2rgb(128,128,vals[i]);
+    id.data[i*4]=c[0]; id.data[i*4+1]=c[1]; id.data[i*4+2]=c[2]; id.data[i*4+3]=255;
+  }
+  g.putImageData(id,0,0);
+}
+
+function renderPatterns(){
+  if(!cur) return;
+  const mode=[...modeRadios].find(r=>r.checked).value;
+  const chn=chSel.value;
+  const an=cur.an[chn];
+  const Q = chn==='Y' ? cur.params.qY : cur.params.qC;
+  const {sx,sy}=cur.params;
+  const bxc = chn==='Y' ? sel.bx : Math.floor(sel.bx/sx);
+  const byc = chn==='Y' ? sel.by : Math.floor(sel.by/sy);
+  const o=(byc*an.bw+bxc)*64;
+  const coef=an.coefs.subarray(o,o+64);
+
+  let nz=0; for(let k=0;k<64;k++) if(coef[k]!==0) nz++;
+  let avg=0; for(let k=0;k<64;k++) avg+=an.counts[k]; avg/=an.nb;
+
+  for(let k=0;k<64;k++){
+    const cl=cells[k];
+    cl.d.classList.remove('on');
+    cl.c.style.borderColor='transparent';
+    cl.c.style.opacity='1';
+    if(mode==='block'){
+      const on=coef[k]!==0;
+      cl.l.textContent=coef[k];
+      if(on){ cl.d.classList.add('on'); cl.c.style.borderColor='#5fb3a3'; }
+      else cl.c.style.opacity='0.2';
+    } else if(mode==='image'){
+      const share=an.counts[k]/an.nb;
+      cl.l.textContent=Math.round(share*100)+' %';
+      cl.c.style.opacity=(0.2+0.8*share).toFixed(2);
+      cl.c.style.borderColor='rgba(95,179,163,'+share.toFixed(2)+')';
+      if(share>=0.5) cl.d.classList.add('on');
+    } else {
+      cl.l.textContent=Q[k];
+    }
+  }
+
+  // Original- und rekonstruierter Block
+  const pl = chn==='Y' ? {data:planes.Y,w:planes.PW} : cur.sub[chn];
+  const orig=new Float64Array(64);
+  for(let y=0;y<8;y++) for(let x=0;x<8;x++) orig[y*8+x]=pl.data[(byc*8+y)*pl.w+bxc*8+x];
+  const F=new Float64Array(64), rec=new Float64Array(64);
+  for(let k=0;k<64;k++) F[k]=coef[k]*Q[k];
+  idct(F,rec);
+  for(let k=0;k<64;k++) rec[k]+=128;
+  drawBlock($('cvBlkOrig'),orig,chn);
+  drawBlock($('cvBlkRec'),rec,chn);
+
+  const names={Y:'Helligkeit (Y)',Cb:'Farbe Cb',Cr:'Farbe Cr'};
+  $('patSummary').innerHTML='Kanal <b>'+names[chn]+'</b>, gewählter Block: <b>'+nz+' von 64</b> Mustern werden noch gespeichert (der Rest ist 0). '+
+    'Im Durchschnitt über alle Blöcke des Bildes: <b>'+fmt1(avg)+' von 64</b>.'+
+    (chn!=='Y' && (sx>1||sy>1) ? '<br><span class="muted">Ein Farb-Block deckt hier '+(8*sx)+'×'+(8*sy)+' Bildpixel ab (gestrichelter Bereich im Bild).</span>' : '');
+  const legends={
+    block:'Hell umrandet = dieses Muster wird für den gewählten Block noch gespeichert. Die Zahl ist sein Gewicht (0 = entfällt, negativ = invertiertes Muster).',
+    image:'Prozentzahl = in wie vielen Blöcken des ganzen Bildes dieses Muster noch vorkommt (hell = häufig). Meist überleben nur die groben Muster oben links.',
+    table:'Teiler der Quantisierungstabelle: Gewicht ÷ Teiler, dann runden. Große Teiler (rechts unten) lassen feine Muster schnell auf 0 fallen.'
+  };
+  $('patLegend').textContent=legends[mode];
+}
+
+function renderSelection(){
+  if(!cur) return;
+  drawChroma();
+  renderPatterns();
+  drawOverlay();
+}
+
+// ------------------------------------------------------------------ Berechnung
+function analyze(q,params){
+  const {sx,sy}=params, PW=planes.PW, PH=planes.PH;
+  const sub={ Cb:subsample(planes.Cb,PW,PH,sx,sy), Cr:subsample(planes.Cr,PW,PH,sx,sy) };
+  const an={
+    Y:analyzeChannel({data:planes.Y,w:PW,h:PH},params.qY),
+    Cb:analyzeChannel(sub.Cb,params.qC),
+    Cr:analyzeChannel(sub.Cr,params.qC)
+  };
+  return {q,params,sub,an};
+}
+
+function update(){
+  if(!ready) return;
+  const id=++reqId, q=parseInt(slider.value,10);
+  srcCanvas.toBlob(async blob=>{
+    if(id!==reqId) return;
+    if(!blob){ status.textContent='JPG-Kodierung fehlgeschlagen.'; status.classList.add('error'); return; }
+    const bytes=new Uint8Array(await blob.arrayBuffer());
+    if(id!==reqId) return;
+
+    const parsed=parseJpeg(bytes);
+    const params=parsed||fallbackParams(q);
+
+    const url=URL.createObjectURL(blob);
+    const old=currentUrl; currentUrl=url;
+    preview.src=url;
+    if(old) URL.revokeObjectURL(old);
+
+    cur=analyze(q,params);
+    sizeOut.textContent=fmtSize(blob.size);
+    const n=params.sx*params.sy;
+    subOut.textContent = n===1 ? '4:4:4' : (params.sx===2&&params.sy===1) ? '4:2:2' : (params.sx===2&&params.sy===2) ? '4:2:0' : params.sx+'×'+params.sy;
+    status.classList.remove('error');
+    status.textContent = W+' × '+H+' Pixel · '+(parsed
+      ? 'Tabellen und Farbauflösung aus der erzeugten JPG-Datei gelesen.'
+      : 'Hinweis: JPG-Header nicht lesbar, es wird mit der Standardformel gerechnet.');
+    renderSelection();
+  },'image/jpeg',q/100);
+}
+
+slider.addEventListener('input',()=>{ qualityOut.textContent=slider.value; update(); });
+zoomSel.addEventListener('change',layoutImage);
+gridCheck.addEventListener('change',drawOverlay);
+chSel.addEventListener('change',renderPatterns);
+modeRadios.forEach(r=>r.addEventListener('change',renderPatterns));
+window.addEventListener('resize',()=>{ if(zoomSel.value==='fit') layoutImage(); });
+
+// ------------------------------------------------------------------ Laden
+const img=new Image();
+img.onload=()=>{
+  W=img.naturalWidth; H=img.naturalHeight;
+  srcCanvas=document.createElement('canvas');
+  srcCanvas.width=W; srcCanvas.height=H;
+  const g=srcCanvas.getContext('2d',{willReadFrequently:true});
+  g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  g.drawImage(img,0,0);
+  let data;
+  try{ data=g.getImageData(0,0,W,H).data; }
+  catch(e){
+    status.textContent='Pixelzugriff blockiert ('+e.message+'). Diese Seite muss über einen lokalen Webserver geöffnet werden (nicht per Doppelklick/file://).';
+    status.classList.add('error');
+    return;
+  }
+  planes=buildPlanes(data,W,H);
+  sel={bx:Math.floor(Math.ceil(W/8)/2), by:Math.floor(Math.ceil(H/8)/2)};
+  ready=true;
+  layoutImage();
+  update();
+};
+img.onerror=()=>{
+  status.textContent='"'+IMAGE_FILE+'" konnte nicht geladen werden. Prüfen: liegt die Datei exakt unter diesem Namen (Groß-/Kleinschreibung) im selben Ordner wie diese HTML-Datei? Der Dateiname steht oben im Skript (IMAGE_FILE).';
+  status.classList.add('error');
+};
+img.src=IMAGE_FILE;
+})();
+</script>
+</body>
+</html>
