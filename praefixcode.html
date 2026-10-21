@@ -1,0 +1,527 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Präfixcode-Tester</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: eine einzelne Spalte. Eingabe oben, dann Zeichentabelle, codierter Text, Dekodierung. */
+:root {
+  --bg: #EDF0F3;
+  --panel: #F8F9FB;
+  --ink: #16202A;
+  --muted: #566472;
+  --line: #CBD3DB;
+  --accent: #0A6C74;
+  --accent-ink: #FFFFFF;
+  --ok: #14633A;
+  --ok-bg: #DDF0E4;
+  --bad: #A3211A;
+  --bad-bg: #F9E3E1;
+  --tint-a: #B9E0E6;
+  --tint-b: #F2D6AE;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1418;
+    --panel: #151D23;
+    --ink: #DCE5EC;
+    --muted: #8C9BA8;
+    --line: #2B3843;
+    --accent: #5CC4CC;
+    --accent-ink: #06262A;
+    --ok: #7AD6A0;
+    --ok-bg: #17301F;
+    --bad: #FF9E95;
+    --bad-bg: #3A1B1A;
+    --tint-a: #1F4F57;
+    --tint-b: #62431F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1418;
+  --panel: #151D23;
+  --ink: #DCE5EC;
+  --muted: #8C9BA8;
+  --line: #2B3843;
+  --accent: #5CC4CC;
+  --accent-ink: #06262A;
+  --ok: #7AD6A0;
+  --ok-bg: #17301F;
+  --bad: #FF9E95;
+  --bad-bg: #3A1B1A;
+  --tint-a: #1F4F57;
+  --tint-b: #62431F;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--font-body);
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 52rem; margin-inline: auto; display: flex; flex-direction: column; gap: 28px; }
+section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+h1 { font-size: 1.6rem; line-height: 1.2; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0; }
+.lede { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+textarea {
+  width: 100%; min-height: 6.5rem; resize: vertical;
+  font: inherit; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px;
+}
+textarea:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hint { color: var(--muted); font-size: .85rem; }
+button { font: inherit; cursor: pointer; border-radius: 6px; }
+.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 4px 10px; font-size: .85rem; }
+.ghost:hover { border-color: var(--accent); }
+.primary { background: var(--accent); color: var(--accent-ink); border: 0; padding: 10px 18px; font-weight: 600; }
+.primary:hover { filter: brightness(1.08); }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+th { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.glyphcell { white-space: nowrap; }
+.glyph { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 600; }
+.gname { font-size: .75rem; color: var(--muted); margin-left: .5em; }
+.count { margin-left: .75em; padding: 1px 7px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+td.codecell { width: 75%; }
+.codewrap { display: flex; align-items: center; gap: 10px; }
+.codewrap .codeinput { flex: 1; }
+.codeinput {
+  width: 100%; min-width: 10ch;
+  font: 500 1rem var(--font-mono); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px;
+}
+tr.bad .codeinput { border-color: var(--bad); background: var(--bad-bg); }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.pill.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+.pill.bad { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
+.empty td { color: var(--muted); }
+
+.status { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); min-width: 0; overflow-wrap: anywhere; }
+.status.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.status.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.status ul { margin: 6px 0 0; padding-left: 1.2em; }
+
+.mono {
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.8;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 12px; min-height: 3.2rem; min-width: 0;
+}
+.mono:empty::before { content: attr(data-ph); color: var(--muted); font-family: var(--font-body); font-size: .9rem; }
+.cw.a { background: var(--tint-a); }
+.cw.b { background: var(--tint-b); }
+.noshade .cw { background: none; }
+.cw.miss { color: var(--bad); background: var(--bad-bg); }
+.diff { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+
+.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+#res { display: flex; flex-direction: column; gap: 10px; }
+
+/* Ohne "Check" keine roten oder grünen Hinweise */
+.wrap:not(.checking) .pill,
+.wrap:not(.checking) #resMeta,
+.wrap:not(.checking) .status:not(.info) { display: none; }
+.wrap:not(.checking) tr.bad .codeinput { border-color: var(--line); background: var(--bg); }
+.wrap:not(.checking) .cw.miss { color: inherit; background: none; }
+.wrap:not(.checking) .diff { background: none; color: inherit; font-weight: inherit; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>Präfixcode-Tester</h1>
+    <p class="lede">Text eingeben, jedem vorkommenden Zeichen ein Codewort zuweisen und prüfen, ob sich der codierte Text eindeutig dekodieren lässt.</p>
+  </header>
+
+  <section aria-labelledby="h-text">
+    <h2 id="h-text">Text</h2>
+    <label class="sr" for="src">Text, der codiert werden soll</label>
+    <textarea id="src" spellcheck="false" autocomplete="off" autocapitalize="off">mississippi</textarea>
+    <div class="actions">
+      <span class="hint">Beispiel laden:</span>
+      <button type="button" id="ex1" class="ghost">präfixfreier Code</button>
+      <button type="button" id="ex2" class="ghost">nicht präfixfreier Code</button>
+      <label class="check" for="chk"><input type="checkbox" id="chk"> Check</label>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-codes">
+    <h2 id="h-codes">Zeichen und Codes</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Zeichen</th><th>Code</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="h-enc">
+    <h2 id="h-enc">Codierter Text</h2>
+    <div id="enc" class="mono" data-ph="Hier erscheint der codierte Text."></div>
+    <div class="meta">
+      <span id="stats"></span>
+      <label class="check" for="shade"><input type="checkbox" id="shade" checked> Codewörter abwechselnd einfärben</label>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-dec">
+    <h2 id="h-dec">Dekodierung</h2>
+    <div><button type="button" id="go" class="primary">Test: dekodieren</button></div>
+    <div id="res" hidden>
+      <div id="resMsg" class="status" role="status" aria-live="polite"></div>
+      <div id="resOut" class="mono"></div>
+      <div id="resMeta" class="meta"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var src = $('src'), tbody = $('rows'), status = $('status'), stats = $('stats'),
+      enc = $('enc'), go = $('go'), res = $('res'), resMsg = $('resMsg'),
+      resOut = $('resOut'), resMeta = $('resMeta'), shade = $('shade');
+
+  var codes = new Map();
+  var rowRefs = [];
+  var collator = new Intl.Collator('de');
+  var NAMES = { ' ': 'Leerzeichen', '\n': 'Zeilenumbruch', '\t': 'Tabulator', '\r': 'Wagenrücklauf', ' ': 'geschütztes Leerzeichen' };
+
+  function glyph(ch) {
+    if (ch === ' ') return '␣';
+    if (ch === '\n') return '↵';
+    if (ch === '\t') return '⇥';
+    if (ch === '\r') return '⏎';
+    if (/[\p{C}\p{Z}]/u.test(ch)) return 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+    return ch;
+  }
+  function q(ch) { return '„' + glyph(ch) + '“'; }
+  function fmt(n, d) { return n.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+
+  function entries() {
+    var counts = new Map();
+    Array.from(src.value).forEach(function (ch) { counts.set(ch, (counts.get(ch) || 0) + 1); });
+    return Array.from(counts, function (kv) { return { ch: kv[0], count: kv[1], code: codes.get(kv[0]) || '' }; })
+      .sort(function (a, b) { return collator.compare(a.ch, b.ch) || a.ch.codePointAt(0) - b.ch.codePointAt(0); });
+  }
+
+  function analyze(list) {
+    var missing = list.filter(function (e) { return !e.code; });
+    var coded = list.filter(function (e) { return e.code; });
+    var conflicts = [], bad = new Set();
+    for (var i = 0; i < coded.length; i++) {
+      for (var j = 0; j < coded.length; j++) {
+        if (i === j) continue;
+        var a = coded[i], b = coded[j];
+        if (a.code === b.code) {
+          if (i < j) { conflicts.push({ a: a, b: b, kind: 'same' }); bad.add(a.ch); bad.add(b.ch); }
+        } else if (b.code.startsWith(a.code)) {
+          conflicts.push({ a: a, b: b, kind: 'prefix' }); bad.add(a.ch); bad.add(b.ch);
+        }
+      }
+    }
+    return { missing: missing, coded: coded, conflicts: conflicts, bad: bad };
+  }
+
+  function setBox(el, cls, title, lines) {
+    el.className = 'status ' + cls;
+    el.textContent = '';
+    var t = document.createElement('strong');
+    t.textContent = title;
+    el.append(t);
+    if (lines && lines.length) {
+      if (lines.length === 1) {
+        el.append(document.createElement('br'));
+        el.append(document.createTextNode(lines[0]));
+      } else {
+        var ul = document.createElement('ul');
+        lines.forEach(function (l) { var li = document.createElement('li'); li.textContent = l; ul.append(li); });
+        el.append(ul);
+      }
+    }
+  }
+
+  function buildRows(list) {
+    tbody.textContent = '';
+    rowRefs = [];
+    if (!list.length) {
+      var tr0 = document.createElement('tr');
+      tr0.className = 'empty';
+      var td0 = document.createElement('td');
+      td0.colSpan = 2;
+      td0.textContent = 'Noch kein Text. Sobald oben etwas steht, erscheinen hier alle vorkommenden Zeichen.';
+      tr0.append(td0);
+      tbody.append(tr0);
+      return;
+    }
+    list.forEach(function (e) {
+      var tr = document.createElement('tr');
+      var tdG = document.createElement('td');
+      tdG.className = 'glyphcell';
+      var g = document.createElement('span');
+      g.className = 'glyph';
+      g.textContent = glyph(e.ch);
+      tdG.append(g);
+      if (NAMES[e.ch]) {
+        var n = document.createElement('span');
+        n.className = 'gname';
+        n.textContent = NAMES[e.ch];
+        tdG.append(n);
+      }
+      var cnt = document.createElement('span');
+      cnt.className = 'count';
+      cnt.textContent = e.count + '×';
+      cnt.title = 'Anzahl im Text';
+      tdG.append(cnt);
+      var tdC = document.createElement('td');
+      tdC.className = 'codecell';
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'codeinput';
+      inp.id = 'code-' + e.ch.codePointAt(0).toString(16);
+      inp.value = codes.get(e.ch) || '';
+      inp.setAttribute('aria-label', 'Code für ' + q(e.ch));
+      inp.autocomplete = 'off';
+      inp.spellcheck = false;
+      inp.autocapitalize = 'off';
+      inp.addEventListener('input', function () {
+        var v = inp.value.replace(/\s+/g, '');
+        if (v !== inp.value) inp.value = v;
+        if (v) codes.set(e.ch, v); else codes.delete(e.ch);
+        refresh();
+      });
+      inp.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter') return;
+        ev.preventDefault();
+        var idx = rowRefs.findIndex(function (r) { return r.ch === e.ch; });
+        if (rowRefs[idx + 1]) rowRefs[idx + 1].input.focus();
+      });
+      var pill = document.createElement('span');
+      pill.className = 'pill';
+      var cw = document.createElement('div');
+      cw.className = 'codewrap';
+      cw.append(inp, pill);
+      tdC.append(cw);
+      tr.append(tdG, tdC);
+      tbody.append(tr);
+      rowRefs.push({ ch: e.ch, tr: tr, pill: pill, input: inp });
+    });
+  }
+
+  function renderEnc(chars) {
+    enc.textContent = '';
+    if (!chars.length) return;
+    if (chars.length > 4000) {
+      enc.textContent = chars.map(function (ch) { return codes.get(ch) || '?'; }).join('');
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    chars.forEach(function (ch, i) {
+      var code = codes.get(ch);
+      var s = document.createElement('span');
+      s.className = 'cw ' + (code ? (i % 2 ? 'b' : 'a') : 'miss');
+      s.textContent = code || '?';
+      frag.append(s);
+    });
+    enc.append(frag);
+  }
+
+  function refresh() {
+    var chars = Array.from(src.value);
+    var list = entries();
+    var info = analyze(list);
+    var byCh = new Map(list.map(function (e) { return [e.ch, e]; }));
+
+    rowRefs.forEach(function (r) {
+      var e = byCh.get(r.ch);
+      var isBad = info.bad.has(r.ch);
+      var state = !e || !e.code ? 'offen' : (isBad ? 'Konflikt' : 'ok');
+      r.pill.textContent = state;
+      r.pill.className = 'pill' + (state === 'ok' ? ' ok' : state === 'Konflikt' ? ' bad' : '');
+      r.tr.classList.toggle('bad', isBad);
+    });
+
+    if (!list.length) {
+      setBox(status, '', 'Noch kein Text eingegeben.', []);
+    } else if (info.conflicts.length) {
+      var lines = info.conflicts.slice(0, 8).map(function (c) {
+        return c.kind === 'same'
+          ? q(c.a.ch) + ' und ' + q(c.b.ch) + ' haben denselben Code („' + c.a.code + '“).'
+          : 'Der Code von ' + q(c.a.ch) + ' („' + c.a.code + '“) ist Anfang des Codes von ' + q(c.b.ch) + ' („' + c.b.code + '“).';
+      });
+      if (info.conflicts.length > 8) lines.push('… und ' + (info.conflicts.length - 8) + ' weitere Konflikte.');
+      setBox(status, 'bad', 'Nicht präfixfrei.', lines);
+    } else if (info.missing.length) {
+      setBox(status, '', 'Bisher präfixfrei, aber es fehlen noch Codes.', ['Ohne Code: ' + info.missing.map(function (e) { return q(e.ch); }).join(', ')]);
+    } else {
+      setBox(status, 'ok', 'Präfixfrei.', ['Kein Codewort ist Anfang eines anderen, jede Zeichenfolge lässt sich eindeutig dekodieren.']);
+    }
+
+    renderEnc(chars);
+    enc.classList.toggle('noshade', !shade.checked);
+
+    if (list.length && !info.missing.length) {
+      var total = list.reduce(function (s, e) { return s + e.count * e.code.length; }, 0);
+      stats.textContent = 'Länge: ' + total + ' Zeichen · Ø ' + fmt(total / chars.length, 2) + ' pro Textzeichen';
+    } else {
+      stats.textContent = '';
+    }
+
+    res.hidden = true;
+  }
+
+  function onText() {
+    buildRows(entries());
+    refresh();
+  }
+
+  function decodeGreedy(encoded, list) {
+    var sorted = list.slice().sort(function (a, b) { return a.code.length - b.code.length; });
+    var out = [], pos = 0;
+    while (pos < encoded.length) {
+      var hit = sorted.find(function (e) { return encoded.startsWith(e.code, pos); });
+      if (!hit) { out.push('\u{FFFD}'); break; }
+      out.push(hit.ch);
+      pos += hit.code.length;
+    }
+    return out;
+  }
+
+  // Sucht unter allen möglichen Zerlegungen des Codestrings diejenige,
+  // die an möglichst wenigen Stellen mit dem Originaltext übereinstimmt.
+  function decodeWorst(encoded, list, orig) {
+    var N = encoded.length, K = orig.length;
+    var layers = new Array(N + 1);
+    layers[0] = new Map([[0, { c: 0, pp: -1, pk: -1, s: null }]]);
+    var work = 0;
+    for (var pos = 0; pos < N; pos++) {
+      var m = layers[pos];
+      if (!m) continue;
+      for (var kv of m) {
+        var k = kv[0], st = kv[1];
+        for (var i = 0; i < list.length; i++) {
+          if (++work > 4000000) return null;
+          var e = list[i];
+          if (!encoded.startsWith(e.code, pos)) continue;
+          var np = pos + e.code.length, nk = k + 1;
+          var nc = st.c + ((k < K && orig[k] === e.ch) ? 1 : 0);
+          var L = layers[np] || (layers[np] = new Map());
+          var cur = L.get(nk);
+          if (!cur || nc < cur.c) L.set(nk, { c: nc, pp: pos, pk: k, s: e.ch });
+        }
+      }
+    }
+    var end = layers[N];
+    if (!end) return null;
+    var bestK = -1, best = null;
+    for (var kv2 of end) {
+      if (!best || kv2[1].c < best.c || (kv2[1].c === best.c && Math.abs(kv2[0] - K) > Math.abs(bestK - K))) { best = kv2[1]; bestK = kv2[0]; }
+    }
+    var out = [], p = N, kk = bestK;
+    while (p > 0) {
+      var s = layers[p].get(kk);
+      out.push(s.s);
+      p = s.pp;
+      kk = s.pk;
+    }
+    return out.reverse();
+  }
+
+  function showDecoded(dec, orig) {
+    resOut.textContent = '';
+    var run = '';
+    function flush() { if (run) { resOut.append(document.createTextNode(run)); run = ''; } }
+    dec.forEach(function (ch, i) {
+      if (ch === orig[i]) { run += ch; return; }
+      flush();
+      var s = document.createElement('span');
+      s.className = 'diff';
+      s.textContent = ch;
+      resOut.append(s);
+    });
+    flush();
+  }
+
+  go.addEventListener('click', function () {
+    var list = entries();
+    var info = analyze(list);
+    var orig = Array.from(src.value);
+    res.hidden = false;
+    resOut.hidden = true;
+    resMeta.hidden = true;
+    if (!orig.length) {
+      setBox(resMsg, 'info', 'Kein Text vorhanden.', ['Gib oben einen Text ein, dann lässt er sich codieren und dekodieren.']);
+      return;
+    }
+    if (info.missing.length) {
+      setBox(resMsg, 'info', 'Es fehlen noch Codes.', ['Ohne Code: ' + info.missing.map(function (e) { return q(e.ch); }).join(', ')]);
+      return;
+    }
+    var encoded = orig.map(function (ch) { return codes.get(ch); }).join('');
+    var dec, approx = false;
+    if (!info.conflicts.length) {
+      dec = decodeGreedy(encoded, list);
+    } else {
+      dec = decodeWorst(encoded, list, orig);
+      if (!dec) { dec = decodeGreedy(encoded, list); approx = true; }
+    }
+    var diff = 0, len = Math.max(dec.length, orig.length);
+    for (var i = 0; i < len; i++) if (dec[i] !== orig[i]) diff++;
+
+    if (!info.conflicts.length) {
+      setBox(resMsg, 'ok', 'Korrekt dekodiert.', ['Der Code ist präfixfrei, deshalb gibt es genau eine Dekodierung.']);
+    } else if (diff === 0) {
+      setBox(resMsg, '', 'Nicht präfixfrei, aber für diesen Text eindeutig.', [approx
+        ? 'Die einfache Dekodierung ergibt hier den Originaltext. Der Text ist sehr lang, deshalb wurde nicht nach anderen Zerlegungen gesucht.'
+        : 'Es gibt für diesen Text keine andere Zerlegung als das Original. Für andere Texte kann derselbe Code mehrdeutig sein.']);
+    } else {
+      setBox(resMsg, 'bad', 'Nicht präfixfrei: falsch dekodiert.', [approx
+        ? 'Der Text ist sehr lang. Gezeigt wird eine einfache Dekodierung, die immer das kürzeste passende Codewort nimmt.'
+        : 'Der Codestring lässt sich auf mehrere Arten zerlegen. Gezeigt wird eine möglichst falsche Variante, abweichende Stellen sind markiert.']);
+    }
+    showDecoded(dec, orig);
+    resOut.hidden = false;
+    resMeta.textContent = 'Original: ' + orig.length + ' Zeichen · Dekodiert: ' + dec.length + ' Zeichen · Abweichende Stellen: ' + diff;
+    resMeta.hidden = false;
+  });
+
+  function loadExample(text, map) {
+    src.value = text;
+    codes.clear();
+    Object.keys(map).forEach(function (k) { codes.set(k, map[k]); });
+    onText();
+  }
+  $('ex1').addEventListener('click', function () { loadExample('mississippi', { i: '0', s: '10', p: '110', m: '111' }); });
+  $('ex2').addEventListener('click', function () { loadExample('abrakadabra', { a: '0', b: '1', r: '01', k: '10', d: '11' }); });
+
+  src.addEventListener('input', onText);
+  var chk = $('chk');
+  chk.addEventListener('change', function () {
+    document.querySelector('.wrap').classList.toggle('checking', chk.checked);
+  });
+  shade.addEventListener('change', function () { enc.classList.toggle('noshade', !shade.checked); });
+
+  loadExample('mississippi', { i: '0', s: '10', p: '110', m: '111' });
+})();
+</script>
+
+</body></html>
