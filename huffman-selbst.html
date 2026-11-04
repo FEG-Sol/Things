@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huffman-Codierung – selbst konstruieren</title>
+<style>
+:root{
+  --bg:#f3f5fa; --card:#ffffff; --text:#1b2233; --muted:#667085; --line:#dde1ec;
+  --accent:#3563e9; --accent-text:#ffffff; --accent-soft:#e9efff;
+  --mark:#e8890c; --mark-soft:#fff3d9;
+  --leaf:#e3f3e8; --inner:#eef1f8; --stroke:#55627d; --edge:#8a94aa;
+  --zero:#1d4ed8; --one:#c81e4d; --err:#c81e4d; --err-soft:#fdeaee;
+  --ok:#1a7f45; --ok-soft:#e3f5ea;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#12151d; --card:#1b2030; --text:#e8ebf4; --muted:#9aa4bb; --line:#2c3347;
+    --accent:#6d93ff; --accent-text:#0d1220; --accent-soft:#23304f;
+    --mark:#ffb347; --mark-soft:#3a2f16;
+    --leaf:#1f3a2b; --inner:#252c40; --stroke:#8f9bb8; --edge:#6b7691;
+    --zero:#7fa6ff; --one:#ff7a9c; --err:#ff7a9c; --err-soft:#3d1c26;
+    --ok:#6fdc9a; --ok-soft:#1b3326;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
+h1{margin:0 0 4px;font-size:28px}
+h2{margin:0 0 12px;font-size:18px}
+.sub{margin:0 0 20px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+label{display:block;font-weight:600;margin-bottom:6px}
+input[type=text]{width:100%;font:inherit;font-size:20px;letter-spacing:.04em;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{font:inherit;font-weight:600;padding:9px 18px;border-radius:10px;border:1.5px solid var(--accent);cursor:pointer;background:var(--accent);color:var(--accent-text)}
+button.secondary{background:transparent;color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:not(:disabled):hover{filter:brightness(1.08)}
+.rule{margin:12px 0 0;color:var(--muted);font-size:14px}
+.err{margin:10px 0 0;color:var(--err);font-weight:600}
+.scroll{overflow-x:auto}
+.meta{margin:10px 0 0;color:var(--muted);font-size:14px}
+table{border-collapse:collapse}
+table th,table td{border:1px solid var(--line);padding:8px 14px;text-align:center;min-width:48px}
+table th{background:var(--inner);text-align:left;white-space:nowrap}
+td.ch{font:700 18px ui-monospace,Menlo,Consolas,monospace}
+td.code{font:600 16px ui-monospace,Menlo,Consolas,monospace;color:var(--accent);letter-spacing:.05em}
+table.book th{text-align:center}
+.status{padding:10px 14px;border-radius:10px;background:var(--accent-soft);margin-bottom:12px}
+.status.ok{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.warn{padding:10px 14px;border-radius:10px;background:var(--err-soft);border:1.5px solid var(--err);margin-bottom:12px;font-weight:600;animation:shake .4s ease}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.mean{margin:14px 0 0;font-size:18px}
+.mean b{color:var(--accent)}
+.bits{margin:0;font:600 18px/1.6 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;word-break:break-all;color:var(--text)}
+svg{display:block;margin:0 auto}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.tree .bg{fill:transparent;stroke:transparent;stroke-width:2}
+.tree.play,.tree.play .bg{cursor:pointer}
+.tree.play:hover .bg{fill:var(--accent-soft)}
+.tree.sel .bg{fill:var(--mark-soft);stroke:var(--mark)}
+.tree.sel .node.root circle{stroke:var(--mark);stroke-width:3.5}
+.tree.wrong .bg{fill:var(--err-soft);stroke:var(--err);stroke-dasharray:6 5}
+.tree.wrong .node.root circle{stroke:var(--err);stroke-width:3.5}
+.edge{stroke:var(--edge);stroke-width:2}
+.node circle{fill:var(--inner);stroke:var(--stroke);stroke-width:2}
+.node.leaf circle{fill:var(--leaf)}
+.node .w{font-size:15px;font-weight:700;fill:var(--text);text-anchor:middle;dominant-baseline:central}
+.node .sym{font:700 20px ui-monospace,Menlo,Consolas,monospace;fill:var(--text);text-anchor:middle}
+.node .code{font:600 14px ui-monospace,Menlo,Consolas,monospace;fill:var(--accent);text-anchor:middle}
+.elabel{font:700 15px ui-monospace,Menlo,Consolas,monospace;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--card);stroke-width:5px;stroke-linejoin:round}
+.elabel.l0{fill:var(--zero)}
+.elabel.l1{fill:var(--one)}
+.new{animation:fadein .6s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Huffman-Codierung selbst konstruieren</h1>
+  <p class="sub">Übungsmodus: Du baust den Baum Schritt für Schritt selbst</p>
+
+  <section class="card">
+    <label for="txt">Text</label>
+    <input id="txt" type="text" autocomplete="off" spellcheck="false" placeholder="z. B. ABRAKADABRA">
+    <p class="err" id="err" hidden></p>
+    <div class="btns">
+      <button id="btnFreq">Häufigkeiten bestimmen</button>
+      <button id="btnReset" class="secondary">Zurücksetzen</button>
+    </div>
+    <p class="rule">Der Baum mit der kleineren Häufigkeit kommt beim Zusammenfassen automatisch nach links (Ast 0), bei gleicher Häufigkeit der Baum, der weiter links steht. Alle Zeichen (auch Leerzeichen, Umlaute und ß) zählen als eigene Symbole.</p>
+  </section>
+
+  <section class="card" id="freqCard" hidden>
+    <h2>Häufigkeiten</h2>
+    <div class="scroll" id="freqWrap"></div>
+    <p class="meta" id="freqMeta"></p>
+  </section>
+
+  <section class="card" id="treeCard" hidden>
+    <h2>Baumdiagramm</h2>
+    <div class="status" id="status"></div>
+    <div class="warn" id="warn" role="alert" hidden></div>
+    <div class="scroll" id="treeWrap"></div>
+  </section>
+
+  <section class="card" id="bookCard" hidden>
+    <h2>Codebuch</h2>
+    <div class="scroll" id="bookWrap"></div>
+    <p class="mean" id="mean"></p>
+    <p class="meta" id="bookNote"></p>
+  </section>
+
+  <section class="card" id="bitsCard" hidden>
+    <h2>Codierter Text</h2>
+    <p class="bits" id="bits"></p>
+    <p class="meta" id="bitsMeta"></p>
+  </section>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const inp = $('txt'), btnFreq = $('btnFreq'), btnReset = $('btnReset');
+  let S = null;
+
+  // Großbuchstaben; Zeichen, die dabei mehrere Zeichen würden (ß -> SS), bleiben unverändert
+  const up = s => Array.from(s).map(c => { const u = c.toUpperCase(); return u.length === c.length ? u : c; }).join('');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const show = c => /\s/.test(c) ? '␣' : c;
+  const fmt = x => x.toLocaleString('de-DE', {maximumFractionDigits: 3});
+
+  function showErr(msg){ const e = $('err'); e.textContent = msg || ''; e.hidden = !msg; }
+
+  /* ---------- Ablauf ---------- */
+
+  function start(){
+    const text = up(inp.value);
+    inp.value = text;
+    const chars = Array.from(text);
+    if (!chars.length){ showErr('Bitte zuerst einen Text eingeben.'); S = null; render(); return; }
+    showErr('');
+    const map = new Map();
+    chars.forEach(c => map.set(c, (map.get(c) || 0) + 1));
+    const syms = Array.from(map).map(([ch, n]) => ({ch, n}))
+      .sort((a, b) => a.n - b.n || (a.ch < b.ch ? -1 : 1));
+    let id = 0;
+    const forest = syms.map(s => ({id: id++, w: s.n, ch: s.ch, leaf: true, h: 0}));
+    S = {chars, total: chars.length, syms, forest, nextId: id, sel: [], wrong: [], warn: false,
+         stage: 'play', newId: null, codes: null};
+    if (forest.length === 1) finish();
+    render();
+  }
+
+  function finish(){
+    S.stage = 'done';
+    const root = S.forest[0], codes = new Map();
+    if (root.leaf) codes.set(root.ch, '0');
+    else (function walk(n, p){
+      if (n.leaf){ codes.set(n.ch, p); return; }
+      walk(n.left, p + '0'); walk(n.right, p + '1');
+    })(root, '');
+    S.codes = codes;
+  }
+
+  // Klick auf einen (Teil-)Baum
+  function clickTree(id){
+    if (!S || S.stage !== 'play') return;
+    if (!S.forest.some(n => n.id === id)) return;
+    S.warn = false; S.wrong = [];
+    const i = S.sel.indexOf(id);
+    if (i >= 0) S.sel.splice(i, 1);
+    else S.sel.push(id);
+    if (S.sel.length === 2) check();
+    render();
+  }
+
+  // Richtig, wenn die Summe der beiden gewählten Häufigkeiten der kleinstmöglichen Summe entspricht
+  // (das gilt genau dann, wenn es zwei Bäume mit den kleinsten Häufigkeiten sind).
+  function check(){
+    const ws = S.forest.map(n => n.w).sort((a, b) => a - b);
+    const pair = S.forest.filter(n => S.sel.includes(n.id));
+    if (pair[0].w + pair[1].w === ws[0] + ws[1]){
+      merge();
+    } else {
+      S.warn = true; S.wrong = S.sel.slice(); S.sel = [];
+    }
+  }
+
+  function merge(){
+    const f = S.forest;
+    const pair = f.filter(n => S.sel.includes(n.id));   // Reihenfolge wie im Wald: links = 0
+    const a = pair[0], b = pair[1];
+    const node = {id: S.nextId++, w: a.w + b.w, leaf: false, left: a, right: b, h: 1 + Math.max(a.h, b.h)};
+    const rest = f.filter(n => !S.sel.includes(n.id));
+    let i = rest.length;
+    while (i > 0 && rest[i - 1].w > node.w) i--;
+    rest.splice(i, 0, node);
+    S.forest = rest; S.newId = node.id; S.sel = [];
+    if (rest.length === 1) finish();
+  }
+
+  /* ---------- Anzeige ---------- */
+
+  function drawForest(){
+    const f = S.forest, done = S.stage === 'done';
+    const digits = String(S.total).length;
+    const R = digits <= 2 ? 18 : digits * 6 + 10;
+    const slotW = Math.max(56, 2 * R + 16), gap = 34, padX = 24, levelH = 76 + Math.max(0, R - 18), topPad = 44;
+    const maxH = Math.max.apply(null, f.map(n => n.h));
+    const baseY = topPad + maxH * levelH;
+    let cursor = padX;
+    const info = [];
+    f.forEach(root => {
+      const sx = cursor;
+      (function place(n){
+        if (n.leaf){ n.x = cursor + slotW / 2; cursor += slotW; }
+        else { place(n.left); place(n.right); n.x = (n.left.x + n.right.x) / 2; }
+        n.y = baseY - n.h * levelH;
+      })(root);
+      info.push([sx, cursor]);
+      cursor += gap;
+    });
+    const W = cursor - gap + padX, H = baseY + (done ? R + 80 : R + 56);
+    const collect = (n, acc) => { acc.push(n); if (!n.leaf){ collect(n.left, acc); collect(n.right, acc); } return acc; };
+
+    let out = '';
+    f.forEach((root, i) => {
+      const sx = info[i][0], ex = info[i][1];
+      const cls = 'tree' + (S.stage === 'play' ? ' play' : '') + (S.sel.includes(root.id) ? ' sel' : '') + (S.wrong.includes(root.id) ? ' wrong' : '');
+      const top = root.y - R - 12, bot = baseY + (done ? R + 68 : R + 42);
+      const all = collect(root, []);
+      const links = [];
+      all.forEach(n => { if (!n.leaf){ links.push([n, n.left, '0']); links.push([n, n.right, '1']); } });
+
+      out += '<g class="' + cls + '" data-id="' + root.id + '">';
+      out += '<rect class="bg" x="' + (sx - 6) + '" y="' + top + '" width="' + (ex - sx + 12) + '" height="' + (bot - top) + '" rx="12"/>';
+      links.forEach(l => {
+        out += '<line class="edge' + (l[0].id === S.newId ? ' new' : '') + '" x1="' + l[0].x + '" y1="' + l[0].y + '" x2="' + l[1].x + '" y2="' + l[1].y + '"/>';
+      });
+      all.forEach(n => {
+        out += '<g class="node ' + (n.leaf ? 'leaf' : 'inner') + (n === root ? ' root' : '') + (n.id === S.newId ? ' new' : '') + '">';
+        out += '<circle cx="' + n.x + '" cy="' + n.y + '" r="' + R + '"/>';
+        out += '<text class="w" x="' + n.x + '" y="' + n.y + '">' + n.w + '</text>';
+        if (n.leaf){
+          out += '<text class="sym" x="' + n.x + '" y="' + (n.y + R + 24) + '">' + esc(show(n.ch)) + '</text>';
+          if (done) out += '<text class="code" x="' + n.x + '" y="' + (n.y + R + 48) + '">' + esc(S.codes.get(n.ch)) + '</text>';
+        }
+        out += '</g>';
+      });
+      if (done){
+        links.forEach(l => {
+          const lx = (l[0].x + l[1].x) / 2 + (l[2] === '0' ? -12 : 12), ly = (l[0].y + l[1].y) / 2;
+          out += '<text class="elabel l' + l[2] + ' new" x="' + lx + '" y="' + ly + '">' + l[2] + '</text>';
+        });
+      }
+      out += '</g>';
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Huffman-Baum">' + out + '</svg>';
+  }
+
+  function render(){
+    const has = !!S;
+    const done = has && S.stage === 'done';
+    $('freqCard').hidden = !has;
+    $('treeCard').hidden = !has;
+    $('bookCard').hidden = !done;
+    $('bitsCard').hidden = !done;
+    if (!has) return;
+
+    $('freqWrap').innerHTML =
+      '<table class="freq"><tr><th>Zeichen</th>' + S.syms.map(s => '<td class="ch">' + esc(show(s.ch)) + '</td>').join('') +
+      '</tr><tr><th>Häufigkeit</th>' + S.syms.map(s => '<td>' + s.n + '</td>').join('') + '</tr></table>';
+    const hasSpace = S.syms.some(s => /\s/.test(s.ch));
+    $('freqMeta').textContent = 'Insgesamt ' + S.total + ' Zeichen, davon ' + S.syms.length + ' verschiedene.' +
+      (hasSpace ? ' (␣ steht für das Leerzeichen)' : '');
+
+    const st = $('status');
+    if (done){
+      st.className = 'status ok';
+      st.textContent = S.syms.length === 1
+        ? 'Es gibt nur ein verschiedenes Zeichen – der Baum besteht bereits aus einem einzigen Knoten.'
+        : 'Geschafft! Der Huffman-Baum ist fertig. An den Ästen stehen 0 (links) und 1 (rechts).';
+    } else {
+      st.className = 'status';
+      st.textContent = 'Klicke nacheinander zwei (Teil-)Bäume an, die zusammengefasst werden sollen.';
+    }
+    const w = $('warn');
+    w.hidden = !S.warn;
+    if (S.warn) w.textContent = '⚠ Das ist nicht richtig. Bei der Huffman-Codierung werden immer die beiden (Teil-)Bäume mit den kleinsten Häufigkeiten zusammengefasst.';
+
+    $('treeWrap').innerHTML = drawForest();
+
+    if (done){
+      const rows = S.syms.slice().sort((a, b) => b.n - a.n || (a.ch < b.ch ? -1 : 1));
+      let sum = 0;
+      let html = '<table class="book"><tr><th>Zeichen</th><th>Häufigkeit</th><th>Codewort</th><th>Länge</th></tr>';
+      rows.forEach(s => {
+        const c = S.codes.get(s.ch);
+        sum += s.n * c.length;
+        html += '<tr><td class="ch">' + esc(show(s.ch)) + '</td><td>' + s.n + '</td><td class="code">' + esc(c) + '</td><td>' + c.length + '</td></tr>';
+      });
+      html += '</table>';
+      $('bookWrap').innerHTML = html;
+      $('mean').innerHTML = 'Mittlere Wortlänge: <b>' + fmt(sum / S.total) + ' Bit</b> pro Zeichen';
+      const bits = S.chars.map(c => S.codes.get(c)).join('');
+      $('bits').textContent = bits;
+      $('bitsMeta').textContent = bits.length + ' Bit insgesamt';
+      $('bookNote').textContent = S.syms.length === 1
+        ? 'Sonderfall: Bei nur einem verschiedenen Zeichen wird das Codewort 0 festgelegt.'
+        : '';
+    }
+  }
+
+  /* ---------- Ereignisse ---------- */
+
+  inp.addEventListener('input', e => {
+    if (e.isComposing) return;
+    const pos = inp.selectionStart;
+    const v = up(inp.value);
+    if (v !== inp.value){
+      inp.value = v;
+      try { inp.setSelectionRange(pos, pos); } catch (_) {}
+    }
+    showErr('');
+    if (S){ S = null; render(); }
+  });
+  inp.addEventListener('compositionend', () => inp.dispatchEvent(new Event('input')));
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+
+  btnFreq.addEventListener('click', start);
+  btnReset.addEventListener('click', () => { S = null; showErr(''); render(); inp.focus(); });
+  $('treeWrap').addEventListener('click', e => {
+    const g = e.target.closest ? e.target.closest('g.tree') : null;
+    if (g) clickTree(parseInt(g.getAttribute('data-id'), 10));
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
