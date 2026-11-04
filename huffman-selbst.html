@@ -7,7 +7,7 @@
 <style>
 :root{
   --bg:#f3f5fa; --card:#ffffff; --text:#1b2233; --muted:#667085; --line:#dde1ec;
-  --accent:#3563e9; --accent-text:#ffffff; --accent-soft:#e9efff;
+  --accent:#7c3aed; --accent-text:#ffffff; --accent-soft:#f0e9ff;
   --mark:#e8890c; --mark-soft:#fff3d9;
   --leaf:#e3f3e8; --inner:#eef1f8; --stroke:#55627d; --edge:#8a94aa;
   --zero:#1d4ed8; --one:#c81e4d; --err:#c81e4d; --err-soft:#fdeaee;
@@ -16,7 +16,7 @@
 @media (prefers-color-scheme:dark){
   :root{
     --bg:#12151d; --card:#1b2030; --text:#e8ebf4; --muted:#9aa4bb; --line:#2c3347;
-    --accent:#6d93ff; --accent-text:#0d1220; --accent-soft:#23304f;
+    --accent:#b18cff; --accent-text:#170f2b; --accent-soft:#2f2650;
     --mark:#ffb347; --mark-soft:#3a2f16;
     --leaf:#1f3a2b; --inner:#252c40; --stroke:#8f9bb8; --edge:#6b7691;
     --zero:#7fa6ff; --one:#ff7a9c; --err:#ff7a9c; --err-soft:#3d1c26;
@@ -28,6 +28,7 @@
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
 h1{margin:0 0 4px;font-size:28px}
+.badge{display:inline-block;vertical-align:middle;margin-left:10px;padding:3px 12px;border-radius:999px;background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:700;letter-spacing:.1em}
 h2{margin:0 0 12px;font-size:18px}
 .sub{margin:0 0 20px;color:var(--muted)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
@@ -80,7 +81,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 </head>
 <body>
 <main>
-  <h1>Huffman-Codierung selbst konstruieren</h1>
+  <h1>Huffman-Codierung selbst konstruieren<span class="badge">ÜBUNG</span></h1>
   <p class="sub">Übungsmodus: Du baust den Baum Schritt für Schritt selbst</p>
 
   <section class="card">
