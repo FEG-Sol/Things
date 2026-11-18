@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koordinatensystem-Generator</title>
+<style>
+  :root {
+    --bg:#f1f3f9; --card:#ffffff; --line:#e3e7ef; --field:#f6f8fc; --accent:#3b5bdb; --accent-soft:#e8edff;
+    --text:#1f2937; --label:#374151; --muted:#8089a0; --radius:14px;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    color:var(--text); font-size:14px;
+    background: radial-gradient(1200px 500px at 85% -10%, #e4eaff 0%, transparent 60%), var(--bg);
+    min-height:100vh;
+  }
+  .layout { display:grid; grid-template-columns: 440px minmax(0,1fr); gap:20px; padding:20px; align-items:start; max-width:1700px; margin:0 auto; }
+  .controls { display:flex; flex-direction:column; gap:14px; }
+
+  /* Karten */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+          box-shadow:0 1px 2px rgba(16,24,40,.04), 0 6px 20px rgba(16,24,40,.04); }
+  .card-pad { padding:16px 18px 18px; }
+  h2 { margin:0 0 12px; font-size:.78rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); }
+
+  details.card > summary { list-style:none; cursor:pointer; padding:14px 18px; display:flex; align-items:center; gap:12px; border-radius:var(--radius); user-select:none; }
+  details.card > summary::-webkit-details-marker { display:none; }
+  details.card > summary:hover { background:#fafbff; }
+  summary .t { font-weight:650; font-size:.95rem; white-space:nowrap; }
+  summary .m { color:var(--muted); font-size:.78rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; }
+  details.card > summary::after { content:""; width:8px; height:8px; border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+                   transform:rotate(45deg); margin:-3px 4px 0 2px; transition:transform .15s; flex:none; }
+  details.card[open] > summary::after { transform:rotate(-135deg); margin-top:3px; }
+  details.card[open] > summary { border-bottom:1px solid var(--line); border-bottom-left-radius:0; border-bottom-right-radius:0; }
+  .body { padding:14px 18px 18px; }
+  .chead { padding:14px 18px; font-weight:650; font-size:.95rem; border-bottom:1px solid var(--line); }
+  .sub { margin:14px 0 8px; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .sub:first-child { margin-top:0; }
+  hr { border:0; border-top:1px solid var(--line); margin:14px 0; }
+
+  /* Raster: Beschriftung | x | y */
+  .g3 { display:grid; grid-template-columns: minmax(0,1fr) 120px 120px; gap:9px 10px; align-items:center; }
+  .g3 .h { text-align:center; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; }
+  .lab { color:var(--label); font-size:.88rem; }
+  .lab small { display:block; color:var(--muted); font-size:.74rem; margin-top:1px; }
+  .c { display:flex; justify-content:center; align-items:center; }
+  .r1 { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:9px 10px; align-items:center; margin:9px 0; }
+  .r1:first-child { margin-top:0; }
+  .ctl { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+  .ctl .unit { color:var(--muted); font-size:.82rem; min-width:22px; }
+  .off { opacity:.4; pointer-events:none; }
+  .hint { color:var(--muted); font-size:.78rem; line-height:1.45; margin-top:8px; }
+
+  /* Eingabefelder */
+  .st { display:flex; height:34px; width:120px; background:#fff; border:1px solid #d9dee8; border-radius:10px; overflow:hidden; transition:box-shadow .12s, border-color .12s; }
+  .st:focus-within, .txt:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); outline:none; }
+  .st button { width:30px; flex:none; border:0; background:var(--field); color:var(--accent); font-size:1.05rem; font-weight:600; cursor:pointer; line-height:1; padding:0; }
+  .st button:hover { background:var(--accent-soft); }
+  .st button:active { background:#d6defb; }
+  .st input { flex:1; min-width:0; width:100%; border:0; text-align:center; font:inherit; color:var(--text); background:transparent; padding:0 2px; }
+  .st input:focus { outline:none; }
+  .txt, select { height:34px; width:120px; border:1px solid #d9dee8; border-radius:10px; padding:0 10px; font:inherit; color:var(--text); background:#fff; transition:box-shadow .12s, border-color .12s; }
+  .txt { text-align:center; }
+  select { cursor:pointer; padding:0 8px; width:auto; min-width:120px; }
+  input[type=color] { width:34px; height:34px; border:1px solid #d9dee8; border-radius:10px; padding:3px; background:#fff; cursor:pointer; }
+
+  /* Schalter */
+  .sw { position:relative; display:inline-block; width:40px; height:22px; flex:none; }
+  .sw input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:1; }
+  .sw i { position:absolute; inset:0; background:#cbd2de; border-radius:22px; transition:background .15s; }
+  .sw i::before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform .15s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .sw input:checked + i { background:var(--accent); }
+  .sw input:checked + i::before { transform:translateX(18px); }
+  .sw input:focus-visible + i { box-shadow:0 0 0 3px var(--accent-soft); }
+
+  .dim { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; padding:9px 12px; border-radius:10px;
+         background:var(--field); border:1px solid transparent; color:var(--label); font-size:.84rem; line-height:1.4; }
+  .dim b { font-weight:650; }
+  .dim a { color:var(--accent); font-weight:600; text-decoration:none; white-space:nowrap; cursor:pointer; }
+  .dim a:hover { text-decoration:underline; }
+  .dim.warn { background:#fef3f2; border-color:#fecdca; color:#b42318; }
+  .dim.warn a { color:#b42318; text-decoration:underline; }
+  .error { display:none; color:#b42318; background:#fef3f2; border:1px solid #fecdca; padding:9px 12px; border-radius:10px; font-size:.84rem; }
+
+  /* Vorschau */
+  .preview-wrap { position:sticky; top:20px; height:calc(100vh - 40px); display:flex; flex-direction:column; min-height:420px; }
+  #previewBox { position:relative; flex:1; min-height:0; overflow:hidden; border-radius:var(--radius) var(--radius) 0 0;
+    background: conic-gradient(#eceff5 25%, #f8f9fc 0 50%, #eceff5 0 75%, #f8f9fc 0) 0 0 / 18px 18px; }
+  #preview { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 2px 14px rgba(16,24,40,.22); }
+  .pfoot { display:flex; align-items:center; gap:16px; padding:14px 18px; border-top:1px solid var(--line); background:#fff; border-radius:0 0 var(--radius) var(--radius); }
+  #sizeInfo { flex:1; color:var(--label); font-size:.83rem; line-height:1.5; }
+  #sizeInfo b { font-weight:650; color:var(--text); }
+  button.primary { background:linear-gradient(180deg,#4b6af0,#3350d4); color:#fff; border:0; padding:11px 20px; border-radius:11px; font:inherit; font-weight:650; cursor:pointer;
+    box-shadow:0 2px 8px rgba(59,91,219,.35); white-space:nowrap; transition:transform .08s, box-shadow .12s; }
+  button.primary:hover { box-shadow:0 4px 14px rgba(59,91,219,.45); }
+  button.primary:active { transform:translateY(1px); }
+  button.primary:disabled { background:#b6c2ef; box-shadow:none; cursor:not-allowed; }
+
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: 1fr; padding:12px; }
+    .preview-wrap { position:static; order:-1; height:75vh; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <div class="controls">
+    <div class="error" id="err"></div>
+
+    <!-- Hauptbereich -->
+    <div class="card">
+      <div class="chead">Koordinatensystem</div>
+      <div class="body">
+      <div class="g3">
+        <span></span><span class="h">x-Achse</span><span class="h">y-Achse</span>
+
+        <span class="lab">Wertebereich von</span>
+        <div class="st" data-id="xmin" data-val="-5" data-step="1"></div>
+        <div class="st" data-id="ymin" data-val="-5" data-step="1"></div>
+
+        <span class="lab">Wertebereich bis</span>
+        <div class="st" data-id="xmax" data-val="10" data-step="1"></div>
+        <div class="st" data-id="ymax" data-val="10" data-step="1"></div>
+
+        <span class="lab">Markierungsabstand</span>
+        <div class="st" data-id="xtick" data-val="1" data-step="nice" data-min="0.001"></div>
+        <div class="st" data-id="ytick" data-val="1" data-step="nice" data-min="0.001"></div>
+
+        <span class="lab">Skalierung x : y<small>Länge einer Einheit im Verhältnis</small></span>
+        <div class="st" data-id="ra" data-val="1" data-step="1" data-min="1"></div>
+        <div class="st" data-id="rb" data-val="1" data-step="1" data-min="1"></div>
+      </div>
+      <div class="dim" id="dim"><span id="dimText"></span><a href="#" id="dimLink">Maßstab ändern ›</a></div>
+      </div>
+    </div>
+
+    <!-- Achsen & Beschriftung -->
+    <details class="card">
+      <summary><span class="t">Achsen &amp; Beschriftung</span><span class="m">Namen, Zahlen, Schnittpunkt, Pfeile</span></summary>
+      <div class="body">
+        <div class="g3">
+          <span></span><span class="h">x-Achse</span><span class="h">y-Achse</span>
+
+          <span class="lab">Achsenname</span>
+          <input class="txt" type="text" id="xname" value="x" autocomplete="off">
+          <input class="txt" type="text" id="yname" value="y" autocomplete="off">
+
+          <span class="lab">Name anzeigen</span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showXName" checked><i></i></label></span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showYName" checked><i></i></label></span>
+
+          <span class="lab">Zahlen anzeigen</span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showXLabels" checked><i></i></label></span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showYLabels" checked><i></i></label></span>
+
+          <span class="lab">Zahlen: jede n-te</span>
+          <div class="st" data-id="xlab" data-val="1" data-step="1" data-min="1"></div>
+          <div class="st" data-id="ylab" data-val="1" data-step="1" data-min="1"></div>
+
+          <span class="lab">Schnittpunkt der Achsen<small>y-Achse bei x, x-Achse bei y</small></span>
+          <div class="st" data-id="xc" data-val="0" data-step="1"></div>
+          <div class="st" data-id="yc" data-val="0" data-step="1"></div>
+        </div>
+        <hr>
+        <div class="r1" style="margin:0">
+          <span class="lab">Pfeile an den Achsen</span>
+          <label class="sw"><input type="checkbox" id="arrows" checked><i></i></label>
+        </div>
+        <div class="hint">Namen hinter den Pfeilen sind frei wählbar, z. B. „t“, „f(x)“ oder „s in m“. Liegt der Schnittpunkt außerhalb des Bereichs, wandert die Achse an den Rand.</div>
+      </div>
+    </details>
+
+    <!-- Gitter -->
+    <details class="card">
+      <summary><span class="t">Gitter</span><span class="m">Haupt- und Sekundärgitter</span></summary>
+      <div class="body">
+        <div class="r1">
+          <span class="lab">Abstand wie Markierungen</span>
+          <label class="sw"><input type="checkbox" id="mainSame" checked><i></i></label>
+        </div>
+        <div class="g3" id="gridSpacing">
+          <span class="lab">Hauptgitter-Abstand</span>
+          <div class="st" data-id="xgrid" data-val="1" data-step="nice" data-min="0.001"></div>
+          <div class="st" data-id="ygrid" data-val="1" data-step="nice" data-min="0.001"></div>
+        </div>
+        <hr>
+        <div class="r1">
+          <span class="lab">Hauptgitter</span>
+          <label class="sw"><input type="checkbox" id="showMain" checked><i></i></label>
+        </div>
+        <div class="r1" id="mainLine">
+          <span class="lab">Linienfarbe &amp; -stärke</span>
+          <span class="ctl"><input type="color" id="mainColor" value="#8a8f98">
+            <div class="st" data-id="mainW" data-val="0.25" data-step="0.05" data-min="0.05" data-max="2"></div><span class="unit">mm</span></span>
+        </div>
+        <hr>
+        <div class="r1">
+          <span class="lab">Sekundäres Gitter</span>
+          <label class="sw"><input type="checkbox" id="showSub" checked><i></i></label>
+        </div>
+        <div id="subRows">
+          <div class="g3">
+            <span class="lab">Unterteilungen<small>pro Hauptfeld</small></span>
+            <div class="st" data-id="xsub" data-val="2" data-step="1" data-min="2"></div>
+            <div class="st" data-id="ysub" data-val="2" data-step="1" data-min="2"></div>
+          </div>
+          <div class="r1">
+            <span class="lab">Linienfarbe &amp; -stärke</span>
+            <span class="ctl"><input type="color" id="subColor" value="#c9ccd2">
+              <div class="st" data-id="subW" data-val="0.1" data-step="0.05" data-min="0.05" data-max="2"></div><span class="unit">mm</span></span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Aussehen -->
+    <details class="card">
+      <summary><span class="t">Aussehen</span><span class="m">Achsenfarbe, Schrift, Rand, Hintergrund</span></summary>
+      <div class="body">
+        <div class="r1">
+          <span class="lab">Achsenfarbe &amp; -stärke</span>
+          <span class="ctl"><input type="color" id="axisColor" value="#000000">
+            <div class="st" data-id="axisW" data-val="0.4" data-step="0.05" data-min="0.1" data-max="2"></div><span class="unit">mm</span></span>
+        </div>
+        <div class="r1">
+          <span class="lab">Schriftgröße</span>
+          <span class="ctl"><div class="st" data-id="fontPt" data-val="11" data-step="1" data-min="6" data-max="40"></div><span class="unit">pt</span></span>
+        </div>
+        <div class="r1">
+          <span class="lab">Rand ums Koordinatensystem<small>kommt zur Größe dazu</small></span>
+          <span class="ctl"><div class="st" data-id="margin" data-val="1.2" data-step="0.1" data-min="0" data-max="5"></div><span class="unit">cm</span></span>
+        </div>
+        <div class="r1">
+          <span class="lab">Transparenter Hintergrund</span>
+          <label class="sw"><input type="checkbox" id="transparent"><i></i></label>
+        </div>
+      </div>
+    </details>
+
+    <!-- Export -->
+    <div class="card">
+      <div class="chead">PNG-Export</div>
+      <div class="body">
+      <div id="cmRows">
+        <div class="r1">
+          <span class="lab">Länge einer Einheit der</span>
+          <span class="ctl">
+            <select id="refAxis"><option value="x">x-Achse</option><option value="y">y-Achse</option></select>
+          </span>
+        </div>
+        <div class="r1">
+          <span class="lab">1 Einheit entspricht</span>
+          <span class="ctl"><span class="unit">cm</span><div class="st" data-id="refCm" data-val="1" data-step="0.5" data-min="0.1"></div></span>
+        </div>
+      </div>
+      <div class="r1">
+        <span class="lab">Auflösung</span>
+        <span class="ctl"><select id="dpi"><option value="150">150 dpi</option><option value="300" selected>300 dpi</option><option value="600">600 dpi</option></select></span>
+      </div>
+      <div class="hint">Das PNG enthält die dpi-Angabe – in Word &amp; Co. erscheint es dadurch in der gewählten Originalgröße.</div>
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;color:var(--accent);font-size:.84rem;font-weight:600;padding:2px 0">Weitere Optionen</summary>
+        <div style="padding-top:10px">
+          <div class="r1">
+            <span class="lab">Größe festlegen durch</span>
+            <span class="ctl"><select id="expMode"><option value="cm">Länge einer Einheit</option><option value="px">Bildbreite in Pixel</option></select></span>
+          </div>
+          <div class="r1" id="pxRow" style="display:none">
+            <span class="lab">Bildbreite</span>
+            <span class="ctl"><span class="unit">px</span><div class="st" data-id="pxW" data-val="1600" data-step="100" data-min="100" data-max="16000"></div></span>
+            <div class="hint" style="grid-column:1/-1;margin-top:0">Im Pixelmodus bleiben Schrift, Linien und Rand bei der gewählten Auflösung (dpi) gleich groß. Eine größere Bildbreite vergrößert das Koordinatensystem, der Maßstab (cm pro Einheit) ergibt sich daraus.</div>
+          </div>
+          <div class="r1">
+            <span class="lab">Dateiname</span>
+            <span class="ctl"><input class="txt" type="text" id="fname" value="koordinatensystem" style="width:150px;text-align:left"><span class="unit">.png</span></span>
+          </div>
+        </div>
+      </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-wrap card">
+    <div id="previewBox"><canvas id="preview"></canvas></div>
+    <div class="pfoot">
+      <div id="sizeInfo"></div>
+      <button class="primary" id="dl">PNG herunterladen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const num = id => parseFloat(String($(id).value).replace(',', '.').trim());
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  /* Anzeige im Gitter-/Zahlenformat (Dezimalkomma, echtes Minus für Beschriftungen) */
+  function fmt(v) {
+    let s = parseFloat(v.toFixed(8)).toString();
+    if (s === '-0') s = '0';
+    return s.replace('.', ',').replace(/^-/, '\u2212');
+  }
+  function plain(v) { return parseFloat(v.toFixed(8)).toString().replace('.', ','); }
+
+  /* ---------- Eingabefelder mit +/- ---------- */
+  const NICE = [];
+  for (let e = -3; e <= 4; e++) [1, 2, 2.5, 5].forEach(m => NICE.push(parseFloat((m * Math.pow(10, e)).toPrecision(10))));
+  function niceStep(v, dir) {
+    if (!(v > 0)) return dir > 0 ? 1 : v;
+    if (dir > 0) { for (const n of NICE) if (n > v * (1 + 1e-9)) return n; return v; }
+    for (let i = NICE.length - 1; i >= 0; i--) if (NICE[i] < v * (1 - 1e-9)) return NICE[i];
+    return v;
+  }
+  function stepField(el, dir) {
+    const input = el.querySelector('input');
+    let v = parseFloat(String(input.value).replace(',', '.'));
+    if (!Number.isFinite(v)) v = 0;
+    let nv;
+    if (el.dataset.step === 'nice') nv = niceStep(v, dir);
+    else nv = v + dir * parseFloat(el.dataset.step);
+    if (el.dataset.min !== undefined) nv = Math.max(nv, parseFloat(el.dataset.min));
+    if (el.dataset.max !== undefined) nv = Math.min(nv, parseFloat(el.dataset.max));
+    input.value = plain(nv);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  document.querySelectorAll('.st').forEach(el => {
+    el.innerHTML = '<button type="button" tabindex="-1" aria-label="weniger">\u2212</button>' +
+      '<input type="text" inputmode="decimal" autocomplete="off" id="' + el.dataset.id + '" value="' + el.dataset.val + '">' +
+      '<button type="button" tabindex="-1" aria-label="mehr">+</button>';
+    const [minus, plus] = el.querySelectorAll('button');
+    minus.addEventListener('click', () => stepField(el, -1));
+    plus.addEventListener('click', () => stepField(el, +1));
+    el.querySelector('input').addEventListener('keydown', e => {
+      if (e.key === 'ArrowUp') { e.preventDefault(); stepField(el, +1); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); stepField(el, -1); }
+    });
+  });
+
+  /* ---------- Einstellungen einlesen ---------- */
+  function readState() {
+    const S = {
+      xmin: num('xmin'), xmax: num('xmax'), ymin: num('ymin'), ymax: num('ymax'),
+      xtick: num('xtick'), ytick: num('ytick'),
+      xlab: Math.max(1, Math.round(num('xlab')) || 1), ylab: Math.max(1, Math.round(num('ylab')) || 1),
+      xname: $('xname').value, yname: $('yname').value,
+      ra: num('ra'), rb: num('rb'),
+      arrows: $('arrows').checked,
+      xc: num('xc'), yc: num('yc'),
+      showXLabels: $('showXLabels').checked, showYLabels: $('showYLabels').checked,
+      showXName: $('showXName').checked, showYName: $('showYName').checked,
+      showMain: $('showMain').checked, showSub: $('showSub').checked,
+      xsub: Math.round(num('xsub')), ysub: Math.round(num('ysub')),
+      mainColor: $('mainColor').value, subColor: $('subColor').value,
+      mainW: num('mainW'), subW: num('subW'),
+      axisColor: $('axisColor').value, axisW: num('axisW'),
+      fontPt: num('fontPt'), margin: num('margin'),
+      transparent: $('transparent').checked,
+      expMode: $('expMode').value, refAxis: $('refAxis').value, refCm: num('refCm'),
+      dpi: num('dpi'), pxW: num('pxW')
+    };
+    if ($('mainSame').checked) { S.xgrid = S.xtick; S.ygrid = S.ytick; }
+    else { S.xgrid = num('xgrid'); S.ygrid = num('ygrid'); }
+
+    const bad = [];
+    const finite = v => Number.isFinite(v);
+    if (![S.xmin, S.xmax, S.ymin, S.ymax].every(finite)) bad.push('Bitte für alle Wertebereiche Zahlen eingeben.');
+    else {
+      if (S.xmin >= S.xmax) bad.push('x: „von“ muss kleiner als „bis“ sein.');
+      if (S.ymin >= S.ymax) bad.push('y: „von“ muss kleiner als „bis“ sein.');
+    }
+    if (!finite(S.xc) || !finite(S.yc)) bad.push('Bitte für den Schnittpunkt der Achsen Zahlen eingeben.');
+    if (!(S.xtick > 0) || !(S.ytick > 0)) bad.push('Markierungsabstände müssen größer als 0 sein.');
+    if ((S.showMain || S.showSub) && (!(S.xgrid > 0) || !(S.ygrid > 0))) bad.push('Gitterabstände müssen größer als 0 sein.');
+    if (S.showSub && (!(S.xsub >= 2) || !(S.ysub >= 2))) bad.push('Unterteilungen müssen mindestens 2 sein.');
+    if (!(S.ra > 0) || !(S.rb > 0)) bad.push('Skalierungsverhältnis: beide Zahlen müssen größer als 0 sein.');
+    if (S.expMode === 'cm' && !(S.refCm > 0)) bad.push('Länge einer Einheit (cm) muss größer als 0 sein.');
+    if (!finite(S.margin) || S.margin < 0) bad.push('Rand muss ≥ 0 sein.');
+    if (!finite(S.fontPt) || S.fontPt <= 0) bad.push('Schriftgröße ungültig.');
+    if (![S.mainW, S.subW, S.axisW].every(v => finite(v) && v > 0)) bad.push('Linienstärken müssen größer als 0 sein.');
+    if (S.expMode === 'px' && !(S.pxW >= 10)) bad.push('Bildbreite in Pixel ungültig.');
+    if (bad.length) return { error: bad.join(' ') };
+
+    // Länge einer Einheit in cm (cx für x, cy für y); cx : cy = ra : rb
+    if (S.expMode === 'px') {
+      // Pixelmodus: Auflösung wie gewählt (dpi). Schrift, Linien und Rand bleiben gleich groß,
+      // der Maßstab ergibt sich aus der Bildbreite.
+      const gridWcm = S.pxW / (S.dpi / 2.54) - 2 * S.margin;
+      if (!(gridWcm > 0)) return { error: 'Die Bildbreite ist zu klein für den gewählten Rand.' };
+      S.cx = gridWcm / (S.xmax - S.xmin);
+      S.cy = S.cx * S.rb / S.ra;
+    } else if (S.refAxis === 'x') { S.cx = S.refCm; S.cy = S.refCm * S.rb / S.ra; }
+    else { S.cy = S.refCm; S.cx = S.refCm * S.ra / S.rb; }
+    S.totW = (S.xmax - S.xmin) * S.cx + 2 * S.margin;
+    S.totH = (S.ymax - S.ymin) * S.cy + 2 * S.margin;
+    return S;
+  }
+
+  /* ---------- Zeichnen ---------- */
+  function forEachMultiple(min, max, step, fn) {
+    const k0 = Math.ceil(min / step - 1e-9), k1 = Math.floor(max / step + 1e-9);
+    if (k1 - k0 > 3000) return; // Schutz vor zu vielen Linien
+    for (let k = k0; k <= k1; k++) fn(k, k * step);
+  }
+
+  function draw(canvas, S, ppc) {
+    const W = Math.max(1, Math.round(S.totW * ppc));
+    const H = Math.max(1, Math.round(S.totH * ppc));
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    if (!S.transparent) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H); }
+
+    const mm = ppc / 10;
+    const X = x => (S.margin + (x - S.xmin) * S.cx) * ppc;
+    const Y = y => (S.margin + (S.ymax - y) * S.cy) * ppc;
+    const left = X(S.xmin), right = X(S.xmax), top = Y(S.ymax), bottom = Y(S.ymin);
+
+    function line(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+
+    ctx.lineCap = 'butt';
+    // Sekundäres Gitter
+    if (S.showSub) {
+      ctx.strokeStyle = S.subColor; ctx.lineWidth = S.subW * mm;
+      const sx = S.xgrid / S.xsub, sy = S.ygrid / S.ysub;
+      forEachMultiple(S.xmin, S.xmax, sx, (k, v) => {
+        if (S.showMain && Math.abs(k / S.xsub - Math.round(k / S.xsub)) < 1e-9) return;
+        line(X(v), top, X(v), bottom);
+      });
+      forEachMultiple(S.ymin, S.ymax, sy, (k, v) => {
+        if (S.showMain && Math.abs(k / S.ysub - Math.round(k / S.ysub)) < 1e-9) return;
+        line(left, Y(v), right, Y(v));
+      });
+    }
+    // Hauptgitter
+    if (S.showMain) {
+      ctx.strokeStyle = S.mainColor; ctx.lineWidth = S.mainW * mm;
+      forEachMultiple(S.xmin, S.xmax, S.xgrid, (k, v) => line(X(v), top, X(v), bottom));
+      forEachMultiple(S.ymin, S.ymax, S.ygrid, (k, v) => line(left, Y(v), right, Y(v)));
+    }
+
+    // Achsenlage
+    const yAxisX = clamp(S.xc, S.xmin, S.xmax);   // x-Wert, an dem die y-Achse liegt
+    const xAxisY = clamp(S.yc, S.ymin, S.ymax);   // y-Wert, an dem die x-Achse liegt
+    const ax = X(yAxisX), ay = Y(xAxisY);
+    const ext = S.arrows ? 0.5 * ppc : 0;      // Überstand für Pfeil
+    const headL = 0.30 * ppc, headW = 0.09 * ppc;
+    const originCross = Math.abs(yAxisX) < 1e-9 && Math.abs(xAxisY) < 1e-9;
+
+    // Achsen
+    ctx.strokeStyle = S.axisColor; ctx.fillStyle = S.axisColor; ctx.lineWidth = S.axisW * mm;
+    const xEnd = right + ext, yEnd = top - ext;
+    if (S.arrows) {
+      line(left, ay, xEnd - headL * 0.6, ay);
+      line(ax, bottom, ax, yEnd + headL * 0.6);
+      ctx.beginPath(); ctx.moveTo(xEnd, ay); ctx.lineTo(xEnd - headL, ay - headW); ctx.lineTo(xEnd - headL, ay + headW); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(ax, yEnd); ctx.lineTo(ax - headW, yEnd + headL); ctx.lineTo(ax + headW, yEnd + headL); ctx.closePath(); ctx.fill();
+    } else {
+      line(left, ay, right, ay);
+      line(ax, bottom, ax, top);
+    }
+
+    // Markierungen & Zahlen
+    const tickHalf = 0.1 * ppc, gap = 0.1 * ppc;
+    const fs = S.fontPt / 72 * 2.54 * ppc;
+    ctx.font = fs + 'px Arial, Helvetica, sans-serif';
+    ctx.lineWidth = Math.max(S.axisW * 0.8, 0.1) * mm;
+
+    forEachMultiple(S.xmin, S.xmax, S.xtick, (k, v) => {
+      const atCross = Math.abs(v - yAxisX) < 1e-9;   // Wert liegt auf der y-Achse
+      if (atCross) {
+        if (originCross) return;                      // "0" wird unten gesondert gesetzt
+        if (S.showXLabels && k % S.xlab === 0) {      // Beschriftung links neben der y-Achse
+          ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+          ctx.fillText(fmt(v), ax - gap * 0.6, ay + tickHalf + gap * 0.6);
+        }
+        return;
+      }
+      const px = X(v);
+      line(px, ay - tickHalf, px, ay + tickHalf);
+      if (S.showXLabels && k % S.xlab === 0) {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(fmt(v), px, ay + tickHalf + gap * 0.6);
+      }
+    });
+    forEachMultiple(S.ymin, S.ymax, S.ytick, (k, v) => {
+      const atCross = Math.abs(v - xAxisY) < 1e-9;   // Wert liegt auf der x-Achse
+      if (atCross) {
+        if (originCross) return;
+        if (S.showYLabels && k % S.ylab === 0) {      // Beschriftung links neben der y-Achse, über der x-Achse
+          ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+          ctx.fillText(fmt(v), ax - tickHalf - gap, ay - gap * 0.6);
+        }
+        return;
+      }
+      const py = Y(v);
+      line(ax - tickHalf, py, ax + tickHalf, py);
+      if (S.showYLabels && k % S.ylab === 0) {
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(fmt(v), ax - tickHalf - gap, py);
+      }
+    });
+    if (originCross && (S.showXLabels || S.showYLabels)) {
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillText('0', ax - gap * 0.6, ay + gap * 0.6);
+    }
+
+    // Achsenbeschriftung (Namen)
+    if (S.showXName || S.showYName) {
+      ctx.font = 'italic ' + (fs * 1.2) + 'px "Times New Roman", Times, serif';
+      if (S.showXName) {
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(S.xname, xEnd + 0.15 * ppc, ay);
+      }
+      if (S.showYName) {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(S.yname, ax, yEnd - 0.12 * ppc);
+      }
+    }
+    return { W, H };
+  }
+
+  /* ---------- Vorschau ---------- */
+  const preview = $('preview'), box = $('previewBox'), err = $('err');
+  let current = null;
+
+  function exportPpc(S) {
+    return S.dpi / 2.54;
+  }
+  function setOff(el, off) { el.classList.toggle('off', off); el.inert = off; }
+
+  function update() {
+    // Abhängige Bereiche
+    const same = $('mainSame').checked;
+    if (same) { $('xgrid').value = $('xtick').value; $('ygrid').value = $('ytick').value; }
+    setOff($('gridSpacing'), same);
+    setOff($('mainLine'), !$('showMain').checked);
+    setOff($('subRows'), !$('showSub').checked);
+    const px = $('expMode').value === 'px';
+    $('cmRows').style.display = px ? 'none' : '';
+    $('pxRow').style.display = px ? '' : 'none';
+
+    const S = readState();
+    if (S.error) {
+      err.textContent = S.error; err.style.display = 'block';
+      $('dl').disabled = true; current = null; return;
+    }
+    err.style.display = 'none';
+    current = S;
+
+    // Abmessungen des Koordinatensystems (ohne Rand)
+    const gw = (S.xmax - S.xmin) * S.cx, gh = (S.ymax - S.ymin) * S.cy;
+    const r1 = v => fmt(Math.round(v * 10) / 10);
+    const warn = S.expMode === 'cm' && (gw < 5 || gw > 15 || gh < 5 || gh > 15);
+    $('dim').classList.toggle('warn', warn);
+    $('dimText').innerHTML = S.expMode === 'px'
+      ? 'Abmessungen: <b>' + Math.round(gw * S.dpi / 2.54) + ' × ' + Math.round(gh * S.dpi / 2.54) + ' px</b>'
+      : 'Abmessungen: <b>' + r1(gw) + ' × ' + r1(gh) + ' cm</b>' + (warn ? ' – empfohlen: 5 bis 15 cm' : '');
+
+    const dpr = window.devicePixelRatio || 1;
+    const availW = Math.max(100, box.clientWidth - 40), availH = Math.max(100, box.clientHeight - 40);
+    const ppcP = Math.min(availW / S.totW, availH / S.totH) * dpr;
+    draw(preview, S, ppcP);
+    preview.style.width = preview.width / dpr + 'px';
+    preview.style.height = preview.height / dpr + 'px';
+
+    // Export-Info
+    const ppc = exportPpc(S);
+    const W = Math.round(S.totW * ppc), H = Math.round(S.totH * ppc);
+    const tooBig = W > 16000 || H > 16000 || W * H > 120e6;
+    const r2 = v => fmt(Math.round(v * 100) / 100);
+    $('sizeInfo').innerHTML =
+      '1 Einheit: x = <b>' + r2(S.cx) + ' cm</b> · y = <b>' + r2(S.cy) + ' cm</b><br>' +
+      'Bild: <b>' + W + ' × ' + H + ' px</b> · ' + r2(S.totW) + ' × ' + r2(S.totH) + ' cm · ' + Math.round(ppc * 2.54) + ' dpi' +
+      (tooBig ? '<br><span style="color:#b42318">Bild ist zu groß – bitte Auflösung oder Größe verringern.</span>' : '');
+    $('dl').disabled = tooBig;
+  }
+
+  /* ---------- PNG mit dpi-Angabe (pHYs) ---------- */
+  const crcTable = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(buf) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function addPhys(bytes, pxPerMeter) {
+    const chunk = new Uint8Array(21);
+    const dv = new DataView(chunk.buffer);
+    dv.setUint32(0, 9);
+    chunk.set([0x70, 0x48, 0x59, 0x73], 4); // 'pHYs'
+    dv.setUint32(8, pxPerMeter); dv.setUint32(12, pxPerMeter); chunk[16] = 1;
+    dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+    const out = new Uint8Array(bytes.length + 21);
+    out.set(bytes.subarray(0, 33), 0);   // Signatur + IHDR
+    out.set(chunk, 33);
+    out.set(bytes.subarray(33), 54);
+    return out;
+  }
+
+  $('dl').addEventListener('click', async () => {
+    if (!current) return;
+    const S = current;
+    const ppc = exportPpc(S);
+    const c = document.createElement('canvas');
+    draw(c, S, ppc);
+    const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+    if (!blob) { alert('Export fehlgeschlagen (Bild eventuell zu groß).'); return; }
+    let bytes = new Uint8Array(await blob.arrayBuffer());
+    try { bytes = addPhys(bytes, Math.round(ppc * 100)); } catch (e) {}
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (($('fname').value || 'koordinatensystem').replace(/[\\/:*?"<>|]+/g, '_')) + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  });
+
+  $('dimLink').addEventListener('click', e => {
+    e.preventDefault();
+    if ($('expMode').value !== 'cm') { $('expMode').value = 'cm'; update(); }
+    const f = $('refCm');
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => { f.focus(); f.select(); }, 250);
+  });
+
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', update);
+    el.addEventListener('change', update);
+  });
+  window.addEventListener('resize', update);
+  if (window.ResizeObserver) new ResizeObserver(update).observe(box);
+  update();
+})();
+</script>
+</body>
+</html>
