@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -19,13 +20,13 @@
   }
   .layout { display:grid; grid-template-columns: 440px minmax(0,1fr); gap:20px; padding:20px; align-items:start; max-width:1700px; margin:0 auto; }
   .controls { display:flex; flex-direction:column; gap:14px; }
-
+ 
   /* Karten */
   .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
           box-shadow:0 1px 2px rgba(16,24,40,.04), 0 6px 20px rgba(16,24,40,.04); }
   .card-pad { padding:16px 18px 18px; }
   h2 { margin:0 0 12px; font-size:.78rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); }
-
+ 
   details.card > summary { list-style:none; cursor:pointer; padding:14px 18px; display:flex; align-items:center; gap:12px; border-radius:var(--radius); user-select:none; }
   details.card > summary::-webkit-details-marker { display:none; }
   details.card > summary:hover { background:#fafbff; }
@@ -40,7 +41,7 @@
   .sub { margin:14px 0 8px; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
   .sub:first-child { margin-top:0; }
   hr { border:0; border-top:1px solid var(--line); margin:14px 0; }
-
+ 
   /* Raster: Beschriftung | x | y */
   .g3 { display:grid; grid-template-columns: minmax(0,1fr) 120px 120px; gap:9px 10px; align-items:center; }
   .g3 .h { text-align:center; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; }
@@ -53,7 +54,7 @@
   .ctl .unit { color:var(--muted); font-size:.82rem; min-width:22px; }
   .off { opacity:.4; pointer-events:none; }
   .hint { color:var(--muted); font-size:.78rem; line-height:1.45; margin-top:8px; }
-
+ 
   /* Eingabefelder */
   .st { display:flex; height:34px; width:120px; background:#fff; border:1px solid #d9dee8; border-radius:10px; overflow:hidden; transition:box-shadow .12s, border-color .12s; }
   .st:focus-within, .txt:focus, select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); outline:none; }
@@ -66,7 +67,7 @@
   .txt { text-align:center; }
   select { cursor:pointer; padding:0 8px; width:auto; min-width:120px; }
   input[type=color] { width:34px; height:34px; border:1px solid #d9dee8; border-radius:10px; padding:3px; background:#fff; cursor:pointer; }
-
+ 
   /* Schalter */
   .sw { position:relative; display:inline-block; width:40px; height:22px; flex:none; }
   .sw input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:1; }
@@ -75,7 +76,7 @@
   .sw input:checked + i { background:var(--accent); }
   .sw input:checked + i::before { transform:translateX(18px); }
   .sw input:focus-visible + i { box-shadow:0 0 0 3px var(--accent-soft); }
-
+ 
   .dim { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; padding:9px 12px; border-radius:10px;
          background:var(--field); border:1px solid transparent; color:var(--label); font-size:.84rem; line-height:1.4; }
   .dim b { font-weight:650; }
@@ -83,8 +84,19 @@
   .dim a:hover { text-decoration:underline; }
   .dim.warn { background:#fef3f2; border-color:#fecdca; color:#b42318; }
   .dim.warn a { color:#b42318; text-decoration:underline; }
+  .mini { grid-column:1/-1; background:var(--field); color:var(--muted); font-size:.76rem; line-height:1.5; border-radius:8px; padding:7px 10px; }
+  .mini b { color:var(--label); font-weight:600; }
+  .g3 .st, .g3 .txt { width:100%; }
+  .g3 .h sub { font-size:.8em; }
+  .na { color:var(--muted); }
+  .d3 { display:none !important; }
+  .g3.has3d { grid-template-columns:minmax(0,1fr) repeat(3, 100px); }
+  .g3.has3d .d3 { display:flex !important; }
+  .g3.has3d .h.d3 { display:block !important; }
+  .g3.has3d input.d3 { display:block !important; }
+  body.has3d .layout { grid-template-columns: 540px minmax(0,1fr); }
   .error { display:none; color:#b42318; background:#fef3f2; border:1px solid #fecdca; padding:9px 12px; border-radius:10px; font-size:.84rem; }
-
+ 
   /* Vorschau */
   .preview-wrap { position:sticky; top:20px; height:calc(100vh - 40px); display:flex; flex-direction:column; min-height:420px; }
   #previewBox { position:relative; flex:1; min-height:0; overflow:hidden; border-radius:var(--radius) var(--radius) 0 0;
@@ -98,70 +110,95 @@
   button.primary:hover { box-shadow:0 4px 14px rgba(59,91,219,.45); }
   button.primary:active { transform:translateY(1px); }
   button.primary:disabled { background:#b6c2ef; box-shadow:none; cursor:not-allowed; }
-
+ 
   @media (max-width: 980px) {
-    .layout { grid-template-columns: 1fr; padding:12px; }
+    .layout, body.has3d .layout { grid-template-columns: 1fr; padding:12px; }
     .preview-wrap { position:static; order:-1; height:75vh; }
   }
 </style>
 </head>
 <body>
 <div class="layout">
-
+ 
   <div class="controls">
     <div class="error" id="err"></div>
-
+ 
     <!-- Hauptbereich -->
     <div class="card">
       <div class="chead">Koordinatensystem</div>
       <div class="body">
       <div class="g3">
-        <span></span><span class="h">x-Achse</span><span class="h">y-Achse</span>
-
+        <span></span><span class="h d3">x<sub>1</sub>-Achse</span><span class="h hx">x-Achse</span><span class="h hy">y-Achse</span>
+ 
         <span class="lab">Wertebereich von</span>
+        <div class="st d3" data-id="dmin" data-val="-4" data-step="1"></div>
         <div class="st" data-id="xmin" data-val="-5" data-step="1"></div>
         <div class="st" data-id="ymin" data-val="-5" data-step="1"></div>
-
+ 
         <span class="lab">Wertebereich bis</span>
+        <div class="st d3" data-id="dmax" data-val="4" data-step="1"></div>
         <div class="st" data-id="xmax" data-val="10" data-step="1"></div>
         <div class="st" data-id="ymax" data-val="10" data-step="1"></div>
-
+ 
         <span class="lab">Markierungsabstand</span>
+        <div class="st d3" data-id="dtick" data-val="1" data-step="nice" data-min="0.001"></div>
         <div class="st" data-id="xtick" data-val="1" data-step="nice" data-min="0.001"></div>
         <div class="st" data-id="ytick" data-val="1" data-step="nice" data-min="0.001"></div>
-
+ 
         <span class="lab">Skalierung x : y<small>Länge einer Einheit im Verhältnis</small></span>
+        <span class="c d3 na" title="x₁ ist fest auf 1/√2 der Einheitenlänge skaliert">–</span>
         <div class="st" data-id="ra" data-val="1" data-step="1" data-min="1"></div>
         <div class="st" data-id="rb" data-val="1" data-step="1" data-min="1"></div>
+      </div>
+      <div class="r1" style="margin:14px 0 0">
+        <span class="lab">3D-Schrägbild<small>zusätzliche x<sub>1</sub>-Achse nach vorne (links unten)</small></span>
+        <label class="sw"><input type="checkbox" id="threeD"><i></i></label>
       </div>
       <div class="dim" id="dim"><span id="dimText"></span><a href="#" id="dimLink">Maßstab ändern ›</a></div>
       </div>
     </div>
-
+ 
     <!-- Achsen & Beschriftung -->
     <details class="card">
       <summary><span class="t">Achsen &amp; Beschriftung</span><span class="m">Namen, Zahlen, Schnittpunkt, Pfeile</span></summary>
       <div class="body">
         <div class="g3">
-          <span></span><span class="h">x-Achse</span><span class="h">y-Achse</span>
-
+          <span></span><span class="h d3">x<sub>1</sub>-Achse</span><span class="h hx">x-Achse</span><span class="h hy">y-Achse</span>
+ 
           <span class="lab">Achsenname</span>
+          <input class="txt d3" type="text" id="dname" value="x_1" autocomplete="off">
           <input class="txt" type="text" id="xname" value="x" autocomplete="off">
           <input class="txt" type="text" id="yname" value="y" autocomplete="off">
-
-          <span class="lab">Name anzeigen</span>
+ 
+          <span class="lab">Achsenname anzeigen<small>am Pfeil</small></span>
+          <span class="c d3"><label class="sw"><input type="checkbox" id="showDName" checked><i></i></label></span>
           <span class="c"><label class="sw"><input type="checkbox" id="showXName" checked><i></i></label></span>
           <span class="c"><label class="sw"><input type="checkbox" id="showYName" checked><i></i></label></span>
-
+ 
+          <span class="lab">Achsenbeschriftung<small>längs der Achse</small></span>
+          <input class="txt d3" type="text" id="dtitle" value="" placeholder="z. B. Tiefe" autocomplete="off">
+          <input class="txt" type="text" id="xtitle" value="" placeholder="z. B. Alter (Jahre)" autocomplete="off">
+          <input class="txt" type="text" id="ytitle" value="" placeholder="z. B. Fläche" autocomplete="off">
+ 
+          <span class="lab">Achsenbeschriftung anzeigen</span>
+          <span class="c d3"><label class="sw"><input type="checkbox" id="showDTitle" checked><i></i></label></span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showXTitle" checked><i></i></label></span>
+          <span class="c"><label class="sw"><input type="checkbox" id="showYTitle" checked><i></i></label></span>
+ 
+          <div class="mini">Mathe-Schreibweise in Achsenname und -beschriftung:<br>Bruch <b>m/{n+1}</b> · Exponent <b>m^2</b> · Index <b>a_2</b><br>Bei mehreren Zeichen Klammern setzen, z. B. <b>x^{n+1}</b>.</div>
+ 
           <span class="lab">Zahlen anzeigen</span>
+          <span class="c d3"><label class="sw"><input type="checkbox" id="showDLabels" checked><i></i></label></span>
           <span class="c"><label class="sw"><input type="checkbox" id="showXLabels" checked><i></i></label></span>
           <span class="c"><label class="sw"><input type="checkbox" id="showYLabels" checked><i></i></label></span>
-
+ 
           <span class="lab">Zahlen: jede n-te</span>
+          <div class="st d3" data-id="dlab" data-val="1" data-step="1" data-min="1"></div>
           <div class="st" data-id="xlab" data-val="1" data-step="1" data-min="1"></div>
           <div class="st" data-id="ylab" data-val="1" data-step="1" data-min="1"></div>
-
+ 
           <span class="lab">Schnittpunkt der Achsen<small>y-Achse bei x, x-Achse bei y</small></span>
+          <span class="c d3 na" title="Die x₁-Achse verläuft durch den Schnittpunkt der beiden anderen Achsen">–</span>
           <div class="st" data-id="xc" data-val="0" data-step="1"></div>
           <div class="st" data-id="yc" data-val="0" data-step="1"></div>
         </div>
@@ -170,10 +207,10 @@
           <span class="lab">Pfeile an den Achsen</span>
           <label class="sw"><input type="checkbox" id="arrows" checked><i></i></label>
         </div>
-        <div class="hint">Namen hinter den Pfeilen sind frei wählbar, z. B. „t“, „f(x)“ oder „s in m“. Liegt der Schnittpunkt außerhalb des Bereichs, wandert die Achse an den Rand.</div>
+        <div class="hint">Ein <b>\</b> vor einem Zeichen zeigt es wörtlich statt als Bruch (z. B. <b>km\/h</b>). Liegt der Schnittpunkt außerhalb des Bereichs, wandert die Achse an den Rand.</div>
       </div>
     </details>
-
+ 
     <!-- Gitter -->
     <details class="card">
       <summary><span class="t">Gitter</span><span class="m">Haupt- und Sekundärgitter</span></summary>
@@ -216,7 +253,7 @@
         </div>
       </div>
     </details>
-
+ 
     <!-- Aussehen -->
     <details class="card">
       <summary><span class="t">Aussehen</span><span class="m">Achsenfarbe, Schrift, Rand, Hintergrund</span></summary>
@@ -240,7 +277,7 @@
         </div>
       </div>
     </details>
-
+ 
     <!-- Export -->
     <div class="card">
       <div class="chead">PNG-Export</div>
@@ -283,7 +320,7 @@
       </div>
     </div>
   </div>
-
+ 
   <div class="preview-wrap card">
     <div id="previewBox"><canvas id="preview"></canvas></div>
     <div class="pfoot">
@@ -292,13 +329,13 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   const num = id => parseFloat(String($(id).value).replace(',', '.').trim());
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
+ 
   /* Anzeige im Gitter-/Zahlenformat (Dezimalkomma, echtes Minus für Beschriftungen) */
   function fmt(v) {
     let s = parseFloat(v.toFixed(8)).toString();
@@ -306,7 +343,118 @@
     return s.replace('.', ',').replace(/^-/, '\u2212');
   }
   function plain(v) { return parseFloat(v.toFixed(8)).toString().replace('.', ','); }
-
+ 
+  /* ---------- Einfache mathematische Schreibweise ----------
+     Bruch: m/{n+1}   Exponent: m^2 (oder x^{n+1})   Index: a_2
+     Mit \ wird ein Sonderzeichen wörtlich dargestellt: \/  \^  \_  \{  \}  */
+  const MFONT = 'Arial, Helvetica, sans-serif';
+  const WORDCH = /[\p{L}\p{N}.,]/u;
+ 
+  function parseMath(src) {
+    let i = 0;
+    const isWord = c => WORDCH.test(c);
+    function group() {            // erwartet, dass '{' schon gelesen wurde
+      const g = parseSeq('}');
+      if (src[i] === '}') i++;
+      return { t: 'seq', n: g };
+    }
+    function baseAtom() {         // Gruppe, Wort oder einzelnes Zeichen
+      if (i >= src.length) return { t: 'txt', s: '' };
+      const c = src[i];
+      if (c === '\\' && i + 1 < src.length) { i += 2; return { t: 'txt', s: src[i - 1] }; }
+      if (c === '{') { i++; return group(); }
+      if (isWord(c)) { let j = i; while (j < src.length && isWord(src[j])) j++; const s = src.slice(i, j); i = j; return { t: 'txt', s }; }
+      i++; return { t: 'txt', s: c };
+    }
+    function scriptArg() {
+      if (src[i] === '{') { i++; return group(); }
+      if (src[i] === '\\' && i + 1 < src.length) { i += 2; return { t: 'txt', s: src[i - 1] }; }
+      let s = '';
+      if (src[i] === '-' || src[i] === '+') { s += src[i] === '-' ? '\u2212' : '+'; i++; }
+      if (i < src.length && /\d/.test(src[i])) { while (i < src.length && /\d/.test(src[i])) s += src[i++]; }
+      else if (i < src.length) s += src[i++];
+      return { t: 'txt', s };
+    }
+    function withScripts(base) {
+      let node = base;
+      while (i < src.length && (src[i] === '^' || src[i] === '_')) {
+        const op = src[i++]; const arg = scriptArg();
+        if (node.t === 'scr' && ((op === '^' && !node.sup) || (op === '_' && !node.sub))) {
+          if (op === '^') node.sup = arg; else node.sub = arg;
+        } else node = { t: 'scr', base: node, sup: op === '^' ? arg : null, sub: op === '_' ? arg : null };
+      }
+      return node;
+    }
+    function parseSeq(end) {
+      const nodes = [];
+      while (i < src.length) {
+        const c = src[i];
+        if (end && c === end) break;
+        let atom;
+        if (c === '^' || c === '_') atom = { t: 'txt', s: '' };   // Zeichen ohne Basis
+        else atom = baseAtom();
+        let node = withScripts(atom);
+        if (src[i] === '/') { i++; const den = withScripts(baseAtom()); node = { t: 'frac', num: node, den }; }
+        nodes.push(node);
+      }
+      return nodes;
+    }
+    return { t: 'seq', n: parseSeq(null) };
+  }
+ 
+  function layoutMath(ctx, node, fs) {
+    if (node.t === 'txt') {
+      const s = node.s;
+      ctx.font = fs + 'px ' + MFONT;
+      return {
+        w: s ? ctx.measureText(s).width : 0, asc: s ? 0.75 * fs : 0, desc: s ? 0.22 * fs : 0,
+        draw(x, y) { if (!s) return; ctx.font = fs + 'px ' + MFONT; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(s, x, y); }
+      };
+    }
+    if (node.t === 'seq') {
+      const bs = node.n.map(n => layoutMath(ctx, n, fs));
+      let w = 0, asc = 0, desc = 0;
+      bs.forEach(b => { w += b.w; asc = Math.max(asc, b.asc); desc = Math.max(desc, b.desc); });
+      return { w, asc, desc, draw(x, y) { let cx = x; bs.forEach(b => { b.draw(cx, y); cx += b.w; }); } };
+    }
+    if (node.t === 'scr') {
+      const b = layoutMath(ctx, node.base, fs);
+      const sup = node.sup ? layoutMath(ctx, node.sup, fs * 0.7) : null;
+      const sub = node.sub ? layoutMath(ctx, node.sub, fs * 0.7) : null;
+      const supShift = sup ? Math.max(0.4 * fs, b.asc - 0.65 * sup.asc) : 0;
+      const subShift = sub ? Math.max(0.2 * fs, b.desc * 0.8) : 0;
+      const gap = 0.04 * fs;
+      const sw = Math.max(sup ? sup.w : 0, sub ? sub.w : 0);
+      return {
+        w: b.w + gap + sw,
+        asc: Math.max(b.asc, sup ? supShift + sup.asc : 0),
+        desc: Math.max(b.desc, sub ? subShift + sub.desc : 0),
+        draw(x, y) { b.draw(x, y); if (sup) sup.draw(x + b.w + gap, y - supShift); if (sub) sub.draw(x + b.w + gap, y + subShift); }
+      };
+    }
+    // Bruch
+    const n = layoutMath(ctx, node.num, fs), d = layoutMath(ctx, node.den, fs);
+    const a = 0.28 * fs, lw = Math.max(0.055 * fs, 1), g = 0.1 * fs, pad = 0.1 * fs;
+    const w = Math.max(n.w, d.w) + 2 * pad;
+    return {
+      w, asc: a + lw / 2 + g + n.desc + n.asc, desc: d.asc + d.desc + g + lw / 2 - a,
+      draw(x, y) {
+        ctx.fillRect(x, y - a - lw / 2, w, lw);
+        n.draw(x + (w - n.w) / 2, y - a - lw / 2 - g - n.desc);
+        d.draw(x + (w - d.w) / 2, y - a + lw / 2 + g + d.asc);
+      }
+    };
+  }
+ 
+  /* Maße in cm (zur Berechnung der Ränder) */
+  const mctx = document.createElement('canvas').getContext('2d');
+  const REF = 200;
+  function mathBoxCm(text, fsCm) {
+    const b = layoutMath(mctx, parseMath(text), fsCm * REF);
+    return { w: b.w / REF, asc: b.asc / REF, desc: b.desc / REF };
+  }
+  function textWidthCm(str, fsCm) { mctx.font = (fsCm * REF) + 'px ' + MFONT; return mctx.measureText(str).width / REF; }
+ 
   /* ---------- Eingabefelder mit +/- ---------- */
   const NICE = [];
   for (let e = -3; e <= 4; e++) [1, 2, 2.5, 5].forEach(m => NICE.push(parseFloat((m * Math.pow(10, e)).toPrecision(10))));
@@ -340,7 +488,7 @@
       if (e.key === 'ArrowDown') { e.preventDefault(); stepField(el, -1); }
     });
   });
-
+ 
   /* ---------- Einstellungen einlesen ---------- */
   function readState() {
     const S = {
@@ -353,6 +501,13 @@
       xc: num('xc'), yc: num('yc'),
       showXLabels: $('showXLabels').checked, showYLabels: $('showYLabels').checked,
       showXName: $('showXName').checked, showYName: $('showYName').checked,
+      xtitle: $('xtitle').value, ytitle: $('ytitle').value,
+      showXTitle: $('showXTitle').checked, showYTitle: $('showYTitle').checked,
+      threeD: $('threeD').checked,
+      dmin: num('dmin'), dmax: num('dmax'), dtick: num('dtick'),
+      dlab: Math.max(1, Math.round(num('dlab')) || 1),
+      dname: $('dname').value, dtitle: $('dtitle').value,
+      showDName: $('showDName').checked, showDTitle: $('showDTitle').checked, showDLabels: $('showDLabels').checked,
       showMain: $('showMain').checked, showSub: $('showSub').checked,
       xsub: Math.round(num('xsub')), ysub: Math.round(num('ysub')),
       mainColor: $('mainColor').value, subColor: $('subColor').value,
@@ -365,13 +520,18 @@
     };
     if ($('mainSame').checked) { S.xgrid = S.xtick; S.ygrid = S.ytick; }
     else { S.xgrid = num('xgrid'); S.ygrid = num('ygrid'); }
-
+ 
     const bad = [];
     const finite = v => Number.isFinite(v);
     if (![S.xmin, S.xmax, S.ymin, S.ymax].every(finite)) bad.push('Bitte für alle Wertebereiche Zahlen eingeben.');
     else {
       if (S.xmin >= S.xmax) bad.push('x: „von“ muss kleiner als „bis“ sein.');
       if (S.ymin >= S.ymax) bad.push('y: „von“ muss kleiner als „bis“ sein.');
+    }
+    if (S.threeD) {
+      if (!finite(S.dmin) || !finite(S.dmax)) bad.push('Bitte für den Wertebereich der x₁-Achse Zahlen eingeben.');
+      else if (S.dmin >= S.dmax) bad.push('x₁: „von“ muss kleiner als „bis“ sein.');
+      if (!(S.dtick > 0)) bad.push('Der Markierungsabstand der x₁-Achse muss größer als 0 sein.');
     }
     if (!finite(S.xc) || !finite(S.yc)) bad.push('Bitte für den Schnittpunkt der Achsen Zahlen eingeben.');
     if (!(S.xtick > 0) || !(S.ytick > 0)) bad.push('Markierungsabstände müssen größer als 0 sein.');
@@ -384,29 +544,46 @@
     if (![S.mainW, S.subW, S.axisW].every(v => finite(v) && v > 0)) bad.push('Linienstärken müssen größer als 0 sein.');
     if (S.expMode === 'px' && !(S.pxW >= 10)) bad.push('Bildbreite in Pixel ungültig.');
     if (bad.length) return { error: bad.join(' ') };
-
+ 
+    // Ränder: links/unten wachsen automatisch, wenn eine Achsenbeschriftung außerhalb des Gitters liegt
+    const fsCm = S.fontPt / 72 * 2.54;
+    S.mL = S.margin; S.mB = S.margin; S.mT = S.margin; S.mR = S.margin;
+    const yAxX = clamp(S.xc, S.xmin, S.xmax), xAxY = clamp(S.yc, S.ymin, S.ymax);
+    if (S.showXTitle && S.xtitle.trim() && Math.abs(xAxY - S.ymin) < 1e-9) {
+      const b = mathBoxCm(S.xtitle, fsCm * 1.1);
+      S.mB = Math.max(S.margin, 0.46 + (S.showXLabels ? 0.8 * fsCm : 0) + b.asc + b.desc);
+    }
+    if (S.showYTitle && S.ytitle.trim() && Math.abs(yAxX - S.xmin) < 1e-9) {
+      const b = mathBoxCm(S.ytitle, fsCm * 1.1);
+      let maxLab = 0;
+      if (S.showYLabels) forEachMultiple(S.ymin, S.ymax, S.ytick, (k, v) => {
+        if (k % S.ylab === 0) maxLab = Math.max(maxLab, textWidthCm(fmt(v), fsCm));
+      });
+      S.mL = Math.max(S.margin, 0.5 + maxLab + b.asc + b.desc);
+    }
+ 
     // Länge einer Einheit in cm (cx für x, cy für y); cx : cy = ra : rb
     if (S.expMode === 'px') {
       // Pixelmodus: Auflösung wie gewählt (dpi). Schrift, Linien und Rand bleiben gleich groß,
       // der Maßstab ergibt sich aus der Bildbreite.
-      const gridWcm = S.pxW / (S.dpi / 2.54) - 2 * S.margin;
+      const gridWcm = S.pxW / (S.dpi / 2.54) - S.mL - S.mR;
       if (!(gridWcm > 0)) return { error: 'Die Bildbreite ist zu klein für den gewählten Rand.' };
       S.cx = gridWcm / (S.xmax - S.xmin);
       S.cy = S.cx * S.rb / S.ra;
     } else if (S.refAxis === 'x') { S.cx = S.refCm; S.cy = S.refCm * S.rb / S.ra; }
     else { S.cy = S.refCm; S.cx = S.refCm * S.ra / S.rb; }
-    S.totW = (S.xmax - S.xmin) * S.cx + 2 * S.margin;
-    S.totH = (S.ymax - S.ymin) * S.cy + 2 * S.margin;
+    S.totW = (S.xmax - S.xmin) * S.cx + S.mL + S.mR;
+    S.totH = (S.ymax - S.ymin) * S.cy + S.mT + S.mB;
     return S;
   }
-
+ 
   /* ---------- Zeichnen ---------- */
   function forEachMultiple(min, max, step, fn) {
     const k0 = Math.ceil(min / step - 1e-9), k1 = Math.floor(max / step + 1e-9);
     if (k1 - k0 > 3000) return; // Schutz vor zu vielen Linien
     for (let k = k0; k <= k1; k++) fn(k, k * step);
   }
-
+ 
   function draw(canvas, S, ppc) {
     const W = Math.max(1, Math.round(S.totW * ppc));
     const H = Math.max(1, Math.round(S.totH * ppc));
@@ -414,14 +591,14 @@
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, W, H);
     if (!S.transparent) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H); }
-
+ 
     const mm = ppc / 10;
-    const X = x => (S.margin + (x - S.xmin) * S.cx) * ppc;
-    const Y = y => (S.margin + (S.ymax - y) * S.cy) * ppc;
+    const X = x => (S.mL + (x - S.xmin) * S.cx) * ppc;
+    const Y = y => (S.mT + (S.ymax - y) * S.cy) * ppc;
     const left = X(S.xmin), right = X(S.xmax), top = Y(S.ymax), bottom = Y(S.ymin);
-
+ 
     function line(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
-
+ 
     ctx.lineCap = 'butt';
     // Sekundäres Gitter
     if (S.showSub) {
@@ -442,7 +619,7 @@
       forEachMultiple(S.xmin, S.xmax, S.xgrid, (k, v) => line(X(v), top, X(v), bottom));
       forEachMultiple(S.ymin, S.ymax, S.ygrid, (k, v) => line(left, Y(v), right, Y(v)));
     }
-
+ 
     // Achsenlage
     const yAxisX = clamp(S.xc, S.xmin, S.xmax);   // x-Wert, an dem die y-Achse liegt
     const xAxisY = clamp(S.yc, S.ymin, S.ymax);   // y-Wert, an dem die x-Achse liegt
@@ -450,7 +627,70 @@
     const ext = S.arrows ? 0.5 * ppc : 0;      // Überstand für Pfeil
     const headL = 0.30 * ppc, headW = 0.09 * ppc;
     const originCross = Math.abs(yAxisX) < 1e-9 && Math.abs(xAxisY) < 1e-9;
-
+ 
+    // 3D-Schrägbild: zusätzliche x1-Achse durch den Achsenschnittpunkt, positive Werte nach links unten.
+    // 1 Einheit = halbe Kästchendiagonale (Verschiebung 0,5 | 0,5), also 1/√2 der Einheitenlänge.
+    const D = (() => {
+      const vx = -0.5 * S.cx * ppc, vy = 0.5 * S.cy * ppc;   // Bildschirm-Verschiebung je Einheit
+      const len = Math.hypot(vx, vy);
+      const u = { x: vx / len, y: vy / len };                // Richtung der positiven Werte
+      const n = { x: -u.y, y: u.x };                         // Seite der Zahlen (links oben)
+      return { u, n, P: t => ({ x: ax + t * vx, y: ay + t * vy }) };
+    })();
+ 
+    // Achsenbeschriftung (längs der Achsen, mittig im größeren Wertebereich)
+    {
+      const fsT = S.fontPt / 72 * 2.54 * ppc;
+      const bg = S.transparent ? null : 'rgba(255,255,255,0.65)';
+      // Mitte des positiven Wertebereichs (bzw. des negativen, falls dieser größer ist)
+      const centerOf = (lo, hi) => {
+        const posLo = Math.max(lo, 0), negHi = Math.min(hi, 0);
+        const posLen = Math.max(0, hi - posLo), negLen = Math.max(0, negHi - lo);
+        return posLen >= negLen ? (posLo + hi) / 2 : (lo + negHi) / 2;
+      };
+      const paint = (b, x, y) => {
+        if (bg) { ctx.fillStyle = bg; ctx.fillRect(x - 0.08 * ppc, y - b.asc - 0.04 * ppc, b.w + 0.16 * ppc, b.asc + b.desc + 0.08 * ppc); }
+        ctx.fillStyle = S.axisColor; b.draw(x, y);
+      };
+      ctx.fillStyle = S.axisColor;
+      if (S.showXTitle && S.xtitle.trim()) {
+        const b = layoutMath(ctx, parseMath(S.xtitle), fsT * 1.1);
+        const yTop = ay + 0.16 * ppc + (S.showXLabels ? 0.8 * fsT : 0) + 0.15 * ppc;
+        paint(b, X(centerOf(S.xmin, S.xmax)) - b.w / 2, yTop + b.asc);
+      }
+      if (S.showYTitle && S.ytitle.trim()) {
+        ctx.font = fsT + 'px ' + MFONT;
+        let maxLab = 0;
+        if (S.showYLabels) forEachMultiple(S.ymin, S.ymax, S.ytick, (k, v) => {
+          if (k % S.ylab === 0) maxLab = Math.max(maxLab, ctx.measureText(fmt(v)).width);
+        });
+        const b = layoutMath(ctx, parseMath(S.ytitle), fsT * 1.1);
+        const xBase = ax - 0.2 * ppc - maxLab - 0.15 * ppc - b.desc;
+        ctx.save();
+        ctx.translate(xBase, Y(centerOf(S.ymin, S.ymax)) + b.w / 2);
+        ctx.rotate(-Math.PI / 2);
+        paint(b, 0, 0);
+        ctx.restore();
+      }
+      if (S.threeD && S.showDTitle && S.dtitle.trim()) {
+        ctx.font = fsT + 'px ' + MFONT;
+        let maxLab = 0;
+        if (S.showDLabels) forEachMultiple(S.dmin, S.dmax, S.dtick, (k, v) => {
+          if (k % S.dlab === 0 && Math.abs(v) > 1e-9) maxLab = Math.max(maxLab, ctx.measureText(fmt(v)).width);
+        });
+        const b = layoutMath(ctx, parseMath(S.dtitle), fsT * 1.1);
+        const proj = maxLab ? Math.abs(D.n.x) * maxLab + Math.abs(D.n.y) * 0.75 * fsT : 0;
+        const off = 0.16 * ppc + proj + 0.15 * ppc + b.desc;
+        const pm = D.P(centerOf(S.dmin, S.dmax));
+        const bx = pm.x + D.n.x * off, by = pm.y + D.n.y * off;
+        ctx.save();
+        ctx.translate(bx + D.u.x * b.w / 2, by + D.u.y * b.w / 2);   // Text liest sich entlang der Achse nach rechts oben
+        ctx.rotate(Math.atan2(-D.u.y, -D.u.x));
+        paint(b, 0, 0);
+        ctx.restore();
+      }
+    }
+ 
     // Achsen
     ctx.strokeStyle = S.axisColor; ctx.fillStyle = S.axisColor; ctx.lineWidth = S.axisW * mm;
     const xEnd = right + ext, yEnd = top - ext;
@@ -463,13 +703,15 @@
       line(left, ay, right, ay);
       line(ax, bottom, ax, top);
     }
-
+ 
     // Markierungen & Zahlen
     const tickHalf = 0.1 * ppc, gap = 0.1 * ppc;
     const fs = S.fontPt / 72 * 2.54 * ppc;
     ctx.font = fs + 'px Arial, Helvetica, sans-serif';
     ctx.lineWidth = Math.max(S.axisW * 0.8, 0.1) * mm;
-
+    const xLabBase = ay + tickHalf + gap * 0.6 + 0.85 * fs;   // gemeinsame Grundlinie der x-Zahlen
+    let lastXRight = -Infinity, lastYTop = Infinity;           // letzte beschriftete Zahl je Achse
+ 
     forEachMultiple(S.xmin, S.xmax, S.xtick, (k, v) => {
       const atCross = Math.abs(v - yAxisX) < 1e-9;   // Wert liegt auf der y-Achse
       if (atCross) {
@@ -483,8 +725,10 @@
       const px = X(v);
       line(px, ay - tickHalf, px, ay + tickHalf);
       if (S.showXLabels && k % S.xlab === 0) {
-        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        ctx.fillText(fmt(v), px, ay + tickHalf + gap * 0.6);
+        const txt = fmt(v);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(txt, px, xLabBase);
+        lastXRight = Math.max(lastXRight, px + ctx.measureText(txt).width / 2);
       }
     });
     forEachMultiple(S.ymin, S.ymax, S.ytick, (k, v) => {
@@ -502,38 +746,85 @@
       if (S.showYLabels && k % S.ylab === 0) {
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
         ctx.fillText(fmt(v), ax - tickHalf - gap, py);
+        lastYTop = Math.min(lastYTop, py - 0.4 * fs);
       }
     });
     if (originCross && (S.showXLabels || S.showYLabels)) {
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.fillText('0', ax - gap * 0.6, ay + gap * 0.6);
     }
-
+ 
     // Achsenbeschriftung (Namen)
-    if (S.showXName || S.showYName) {
-      ctx.font = 'italic ' + (fs * 1.2) + 'px "Times New Roman", Times, serif';
-      if (S.showXName) {
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(S.xname, xEnd + 0.15 * ppc, ay);
+    // x1-Achse (3D-Schrägbild): Linie, Pfeil, Markierungen, Zahlen und Name
+    if (S.threeD) {
+      const { u, n, P } = D;
+      ctx.strokeStyle = S.axisColor; ctx.fillStyle = S.axisColor; ctx.lineWidth = S.axisW * mm;
+      const extD = S.arrows ? 0.5 * ppc : 0;
+      const p0 = P(S.dmin), p1 = P(S.dmax);
+      const tip = { x: p1.x + u.x * extD, y: p1.y + u.y * extD };
+      if (S.arrows) {
+        line(p0.x, p0.y, tip.x - u.x * headL * 0.6, tip.y - u.y * headL * 0.6);
+        ctx.beginPath(); ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(tip.x - u.x * headL + n.x * headW, tip.y - u.y * headL + n.y * headW);
+        ctx.lineTo(tip.x - u.x * headL - n.x * headW, tip.y - u.y * headL - n.y * headW);
+        ctx.closePath(); ctx.fill();
+      } else line(p0.x, p0.y, p1.x, p1.y);
+      ctx.lineWidth = Math.max(S.axisW * 0.8, 0.1) * mm;
+      ctx.font = fs + 'px ' + MFONT;
+      const offL = tickHalf + gap * 0.6;
+      forEachMultiple(S.dmin, S.dmax, S.dtick, (k, v) => {
+        if (Math.abs(v) < 1e-9) return;
+        const p = P(v);
+        line(p.x - n.x * tickHalf, p.y - n.y * tickHalf, p.x + n.x * tickHalf, p.y + n.y * tickHalf);
+        if (S.showDLabels && k % S.dlab === 0) {
+          ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+          ctx.fillText(fmt(v), p.x + n.x * offL, p.y + n.y * offL);
+        }
+      });
+      if (S.showDName && S.dname.trim()) {
+        const b = layoutMath(ctx, parseMath(S.dname), fs * 1.15);
+        const along = S.arrows ? 0.1 * ppc : 0.45 * ppc;
+        const ex = tip.x + u.x * along + n.x * offL, ey = tip.y + u.y * along + n.y * offL;
+        b.draw(ex - b.w, ey - b.desc);
       }
-      if (S.showYName) {
-        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(S.yname, ax, yEnd - 0.12 * ppc);
-      }
+    }
+ 
+    // Achsennamen: in Verlängerung der Zahlen, auf Höhe der Achsenspitze, mit Abstand zur letzten Zahl
+    ctx.fillStyle = S.axisColor;
+    const nameGap = 0.25 * ppc;
+    if (S.showXName && S.xname.trim()) {
+      const b = layoutMath(ctx, parseMath(S.xname), fs * 1.15);
+      const x0 = Math.max(xEnd - b.w / 2, lastXRight + nameGap);
+      b.draw(x0, xLabBase);
+    }
+    if (S.showYName && S.yname.trim()) {
+      const b = layoutMath(ctx, parseMath(S.yname), fs * 1.15);
+      const half = (b.asc + b.desc) / 2;
+      const cy = Math.min(yEnd, lastYTop - nameGap - half);
+      b.draw(ax - tickHalf - gap - b.w, cy + (b.asc - b.desc) / 2);
     }
     return { W, H };
   }
-
+ 
   /* ---------- Vorschau ---------- */
   const preview = $('preview'), box = $('previewBox'), err = $('err');
   let current = null;
-
+  let dmaxManual = false;   // true, sobald der Wert „bis“ der x₁-Achse von Hand geändert wurde
+ 
   function exportPpc(S) {
     return S.dpi / 2.54;
   }
   function setOff(el, off) { el.classList.toggle('off', off); el.inert = off; }
-
+ 
   function update() {
+    // x1-Achse: solange nicht von Hand geändert, reicht der positive Bereich bis in die Ecke unten links
+    if (!dmaxManual) {
+      const xmn = num('xmin'), xmx = num('xmax'), ymn = num('ymin'), ymx = num('ymax');
+      const ox = clamp(num('xc'), xmn, xmx), oy = clamp(num('yc'), ymn, ymx);
+      const t = 2 * Math.min(ox - xmn, oy - ymn);
+      if ([xmn, xmx, ymn, ymx, ox, oy].every(Number.isFinite)) $('dmax').value = plain(t > 0 ? parseFloat(t.toFixed(4)) : 4);
+    }
+ 
     // Abhängige Bereiche
     const same = $('mainSame').checked;
     if (same) { $('xgrid').value = $('xtick').value; $('ygrid').value = $('ytick').value; }
@@ -543,7 +834,7 @@
     const px = $('expMode').value === 'px';
     $('cmRows').style.display = px ? 'none' : '';
     $('pxRow').style.display = px ? '' : 'none';
-
+ 
     const S = readState();
     if (S.error) {
       err.textContent = S.error; err.style.display = 'block';
@@ -551,7 +842,7 @@
     }
     err.style.display = 'none';
     current = S;
-
+ 
     // Abmessungen des Koordinatensystems (ohne Rand)
     const gw = (S.xmax - S.xmin) * S.cx, gh = (S.ymax - S.ymin) * S.cy;
     const r1 = v => fmt(Math.round(v * 10) / 10);
@@ -560,14 +851,14 @@
     $('dimText').innerHTML = S.expMode === 'px'
       ? 'Abmessungen: <b>' + Math.round(gw * S.dpi / 2.54) + ' × ' + Math.round(gh * S.dpi / 2.54) + ' px</b>'
       : 'Abmessungen: <b>' + r1(gw) + ' × ' + r1(gh) + ' cm</b>' + (warn ? ' – empfohlen: 5 bis 15 cm' : '');
-
+ 
     const dpr = window.devicePixelRatio || 1;
     const availW = Math.max(100, box.clientWidth - 40), availH = Math.max(100, box.clientHeight - 40);
     const ppcP = Math.min(availW / S.totW, availH / S.totH) * dpr;
     draw(preview, S, ppcP);
     preview.style.width = preview.width / dpr + 'px';
     preview.style.height = preview.height / dpr + 'px';
-
+ 
     // Export-Info
     const ppc = exportPpc(S);
     const W = Math.round(S.totW * ppc), H = Math.round(S.totH * ppc);
@@ -579,7 +870,7 @@
       (tooBig ? '<br><span style="color:#b42318">Bild ist zu groß – bitte Auflösung oder Größe verringern.</span>' : '');
     $('dl').disabled = tooBig;
   }
-
+ 
   /* ---------- PNG mit dpi-Angabe (pHYs) ---------- */
   const crcTable = (() => {
     const t = new Uint32Array(256);
@@ -604,7 +895,7 @@
     out.set(bytes.subarray(33), 54);
     return out;
   }
-
+ 
   $('dl').addEventListener('click', async () => {
     if (!current) return;
     const S = current;
@@ -622,7 +913,28 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   });
-
+ 
+  $('dmax').addEventListener('input', () => { dmaxManual = true; });
+ 
+  /* 3D-Schrägbild: zusätzliche Spalte x1, Achsen umbenennen */
+  document.querySelectorAll('.g3').forEach(g => { if (g.querySelector('.d3')) g.classList.add('ax'); });
+  function apply3D() {
+    const on = $('threeD').checked;
+    document.body.classList.toggle('has3d', on);
+    document.querySelectorAll('.g3.ax').forEach(g => g.classList.toggle('has3d', on));
+    document.querySelectorAll('.hx').forEach(e => { e.innerHTML = on ? 'x<sub>2</sub>-Achse' : 'x-Achse'; });
+    document.querySelectorAll('.hy').forEach(e => { e.innerHTML = on ? 'x<sub>3</sub>-Achse' : 'y-Achse'; });
+  }
+  $('threeD').addEventListener('change', () => {
+    const on = $('threeD').checked;
+    const rename = (id, from, to) => { if ($(id).value === from) $(id).value = to; };
+    if (on) { rename('xname', 'x', 'x_2'); rename('yname', 'y', 'x_3'); }
+    else { rename('xname', 'x_2', 'x'); rename('yname', 'x_3', 'y'); }
+    apply3D();
+    update();
+  });
+  apply3D();
+ 
   $('dimLink').addEventListener('click', e => {
     e.preventDefault();
     if ($('expMode').value !== 'cm') { $('expMode').value = 'cm'; update(); }
@@ -630,7 +942,7 @@
     f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => { f.focus(); f.select(); }, 250);
   });
-
+ 
   document.querySelectorAll('input, select').forEach(el => {
     el.addEventListener('input', update);
     el.addEventListener('change', update);
@@ -642,3 +954,4 @@
 </script>
 </body>
 </html>
+ 
